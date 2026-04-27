@@ -1,0 +1,19 @@
+id: cautious-researcher
+name: Mei
+age: 38
+role: Vets organizations carefully before giving
+cause_engagement: regular
+scrutiny: high
+goals:
+  - confirm the organization is real and accountable
+  - find financials, transparency reports, or credible third-party signals
+  - understand what percentage of donations reaches the program
+frustrations:
+  - missing or buried "About" information
+  - emotional appeals without data or sources
+  - any sense the page is hiding something
+tech_confidence: medium-high
+device: desktop
+accessibility: []
+reading_level: detailed
+voice: measured, fact-checking, polite but firm

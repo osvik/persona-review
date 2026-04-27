@@ -1,0 +1,46 @@
+# Default form-fill identity used when --allow-submit is enabled.
+# All personas share these values so submitted records are easy to find and
+# delete in the target site's CRM, marketing automation, or analytics.
+#
+# Override per project by passing --submit-data <path> with your own YAML.
+# Any field can be left null/omitted; null fields fall back to the defaults
+# below (and `identity.first_name: null` is replaced with the persona's name).
+
+identity:
+  # If null, the persona's name (e.g. "Aisha", "Mei", "Lucia") is used.
+  first_name: null
+  last_name: "PersonaReview"
+  email: "persona-review+test@example.com"
+  phone: "666666666"
+  date_of_birth: "1990-01-15"
+  dni_o_nie: 08966195J
+
+address:
+  line1: "Calle de las pruebas"
+  line2: "66 ESC INT 1A"
+  city: "Madrid"
+  postcode: "28007"
+  region: "Madrid"
+  country_code: "ES"
+  country_name: "España"
+
+payment:
+  test_credit_card:
+    number: "4242 4242 4242 4242"
+    name_on_card: "PersonaReview TestEntry"
+    exp_month: "12"
+    exp_year: "2030"
+    cvv: "123"
+  test_iban: "DE89 3704 0044 0532 0130 00"
+  test_bic: "COBADEFFXXX"
+  test_account_holder: "PersonaReview TestEntry"
+
+donation:
+  amount: "5"
+  currency: "EUR"
+  frequency: "one-off"
+
+custom:
+  comment: "PersonaReview automated test entry — please delete."
+  organization: "PersonaReview"
+  marker: "PersonaReview"

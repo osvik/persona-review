@@ -1,0 +1,19 @@
+id: plain-language-reader
+name: Anna
+age: 52
+role: Cares about the cause but prefers everyday words
+cause_engagement: regular
+scrutiny: medium
+goals:
+  - understand the issue without a dictionary
+  - feel that the page was written for someone like me
+  - act if I genuinely understand what I'm being asked to do
+frustrations:
+  - acronyms used without explanation
+  - long paragraphs of dense text
+  - being asked to agree to things written in legal-style language
+tech_confidence: medium
+device: mobile
+accessibility: []
+reading_level: general
+voice: thoughtful, plain-spoken, sometimes hesitant

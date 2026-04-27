@@ -1,0 +1,31 @@
+{
+  "name": "persona-review",
+  "version": "0.1.0",
+  "description": "AI persona feedback tool for web pages — visit a page as a simulated persona and get reactions, friction points, and suggestions.",
+  "type": "module",
+  "bin": {
+    "persona-review": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc && chmod +x dist/cli.js",
+    "start": "node dist/cli.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "playwright": "^1.49.0",
+    "yaml": "^2.5.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
