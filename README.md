@@ -70,7 +70,8 @@ Entry points planned:
 
 ## Prerequisites
 
-- **Node.js 20 or newer**
+- **[Git](https://git-scm.com/install/)** - Version control.
+- **[Node.js](https://nodejs.org/en/download) 20 or newer**
 - An **Anthropic API key** — [console.anthropic.com](https://console.anthropic.com)
 - About 200 MB of disk for Chromium (installed via Playwright)
 
@@ -80,7 +81,7 @@ Entry points planned:
 
 ```bash
 git clone <this-repo>
-cd gpes-simulator-personas
+cd persona-review
 npm install
 npx playwright install chromium
 npm run build
@@ -94,7 +95,7 @@ to `dist/` and marks the CLI executable.
 
 ## Configure the LLM provider
 
-The CLI calls Anthropic's API directly. Set your key in the environment:
+The CLI calls Anthropic's API directly. **[Set your key](https://platform.claude.com/dashboard)** in the environment:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
