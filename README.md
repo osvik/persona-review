@@ -54,10 +54,12 @@ Reactions are written in the page's own language, as a native speaker.
    when exhausted. A soft action cap (15 actions per phase) is also enforced.
 
 7. **Opt-in form submission** (`--allow-submit`): with explicit consent,
-   the persona fills the form using a shared test identity (from
-   `./submit-data.yaml` or `--submit-data <path>`), clicks submit **once
-   per session**, and reacts to the resulting thank-you message or error
-   in their final feedback / answer.
+   the persona fills the form using a shared test identity, clicks submit
+   **once per session**, and reacts to the resulting thank-you message or
+   error in their final feedback / answer. Copy `./submit-data.yaml` to
+   your own file and pass it with `--submit-data <path>`; editing the
+   bundled `submit-data.yaml` directly may be overwritten when the software
+   is updated.
 
 It does not: authenticate. Custom personas come from YAML files
 in `personas/` — drop your own in there.
@@ -232,8 +234,13 @@ By default, form-submit buttons are blocked at the browser layer. Pass
 and react to the resulting thank-you / error / validation page. Submission
 is hard-capped at one per `(URL, persona)` session.
 
+Before submitting real forms, copy the bundled identity template and pass
+your copy with `--submit-data`. Do not edit `submit-data.yaml` in place:
+updates may overwrite that file.
+
 ```bash
-npx persona-review https://example.org --persona engaged-regular-supporter --allow-submit
+cp submit-data.yaml submit-data.local.yaml
+npx persona-review https://example.org --persona engaged-regular-supporter --allow-submit --submit-data ./submit-data.local.yaml
 ```
 
 The CLI prints a consent prompt summarizing the test identity and target
@@ -245,7 +252,7 @@ URL, then waits for `y` / `yes` before opening the browser:
 Target URL: https://example.org/petition
 Persona:    Daniel (engaged-regular-supporter)
 
-Source: ./submit-data.yaml (default — pass --submit-data <path> to override)
+Source: ./submit-data.local.yaml (pass --submit-data <path> to use your copy)
 Test identity that will be typed into form fields:
 
   Name:    Daniel PersonaReview
@@ -265,10 +272,12 @@ Hard limit: at most one successful submission per session.
 Continue and submit the form? [y/N]
 ```
 
-Customize the identity by passing
-`--submit-data /path/to/your.yaml`. All personas share the same identity
-so you don't end up with one CRM record per persona — search the CRM for
-`PersonaReview` and the test email after the run, then delete.
+Customize the identity by duplicating `submit-data.yaml`, editing your
+copy, and passing it with `--submit-data /path/to/your.yaml`. Do not edit
+the bundled `submit-data.yaml` directly because software updates may
+overwrite it. All personas share the same identity so you don't end up with
+one CRM record per persona — search the CRM for `PersonaReview` and the test
+email after the run, then delete.
 
 **Country-specific fields.** The four typed sub-sections (`identity`,
 `address`, `payment`, `donation`) accept extra keys beyond the documented
@@ -299,7 +308,7 @@ recognizes by label.
 For automated runs (CI etc.) pass `--yes` to skip the prompt:
 
 ```bash
-npx persona-review https://example.org --allow-submit --yes
+npx persona-review https://example.org --allow-submit --submit-data ./submit-data.local.yaml --yes
 ```
 
 ### All flags
@@ -322,9 +331,13 @@ persona-review --list-personas
   --allow-submit           Permit ONE form submission this session. Persona
                            fills the form with the shared test identity and
                            reacts to the resulting page. Requires consent.
+                           Copy submit-data.yaml and pass the copy with
+                           --submit-data; edits to the bundled file may be
+                           overwritten by updates.
   --allow-downloads        Permit browser downloads. Default: downloads are
                            blocked by Playwright.
-  --submit-data <path>     Override the test identity (default: ./submit-data.yaml).
+  --submit-data <path>     Use your copied test identity file
+                           (default template: ./submit-data.yaml).
   -y, --yes                Skip the --allow-submit consent prompt.
   --model <id>             Provider-specific model id (defaults:
                            Anthropic claude-sonnet-4-6, OpenAI gpt-5.4).
@@ -468,10 +481,12 @@ reviews agree on, and treat the overlap as the signal.
 - **Public pages only.** Authenticated pages are out of scope.
 - **Form submission is opt-in.** Default is no submission — submit buttons
   are blocked at the browser layer. With `--allow-submit` (and confirmed
-  consent), the persona fills the form using the shared test identity in
-  `submit-data.yaml` and submits **at most once per session**. The same
-  test identity is used across all personas so records stay easy to find
-  and delete in the target site's CRM.
+  consent), the persona fills the form using the shared test identity and
+  submits **at most once per session**. Copy `submit-data.yaml`, edit your
+  copy, and pass it with `--submit-data`; direct edits to the bundled file
+  may be overwritten by software updates. The same test identity is used
+  across all personas so records stay easy to find and delete in the target
+  site's CRM.
 - **Downloads are opt-in.** Default is no browser downloads. Pass
   `--allow-downloads` to let Playwright accept downloads for the session.
   Accepted downloads stay in Playwright's temporary browser storage; this
@@ -513,6 +528,6 @@ src/
   cli.ts          # CLI entry: review, --repl, --repl-only, --allow-submit consent
 personas/
   *.yaml          # 10 archetype files; drop your own in here too
-submit-data.yaml  # Default shared test identity for --allow-submit
+submit-data.yaml  # Default shared test identity template for --allow-submit
+                  #   copy it and pass the copy with --submit-data
 ```
-
