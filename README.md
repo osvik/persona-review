@@ -5,6 +5,31 @@ pages**. You give it a URL and a persona; it visits the page and tells you
 what that persona noticed, liked, found confusing, and where they'd give up.
 Reactions are written in the page's own language, as a native speaker.
 
+- [persona-review](#persona-review)
+  - [What it does today](#what-it-does-today)
+  - [Architecture](#architecture)
+  - [Prerequisites](#prerequisites)
+  - [Install](#install)
+  - [Configure the LLM provider](#configure-the-llm-provider)
+  - [Usage](#usage)
+    - [Help](#help)
+    - [Basic review with Anthropic model](#basic-review-with-anthropic-model)
+    - [List the personas](#list-the-personas)
+    - [Pick a persona](#pick-a-persona)
+    - [Different language](#different-language)
+    - [JSON output](#json-output)
+    - [Follow-up questions (interactive REPL)](#follow-up-questions-interactive-repl)
+    - [Allow form submission (`--allow-submit`)](#allow-form-submission---allow-submit)
+    - [All flags](#all-flags)
+    - [Device profile per persona](#device-profile-per-persona)
+    - [Example output (prose)](#example-output-prose)
+    - [Example output (JSON)](#example-output-json)
+  - [Persona file format](#persona-file-format)
+  - [The persona library](#the-persona-library)
+  - [Reproducibility](#reproducibility)
+  - [Scope and safety](#scope-and-safety)
+  - [Development](#development)
+
 ---
 
 ## What it does today
