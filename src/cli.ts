@@ -13,9 +13,12 @@ import {
   runReviewLoop,
   runFollowUpTurn,
   closeConversation,
+  DEFAULT_ANTHROPIC_MODEL,
   DEFAULT_MAX_ACTIONS,
   DEFAULT_MAX_OUTPUT_TOKENS,
   DEFAULT_COST_CAP_USD,
+  DEFAULT_OPENAI_MODEL,
+  DEFAULT_PROVIDER,
   type PersonaConversation,
 } from "./agent.js";
 import type { SessionDevice } from "./browser.js";
@@ -25,12 +28,14 @@ import {
   loadSubmitData,
   type SubmitData,
 } from "./submit-data.js";
+import type { Provider } from "./llm/types.js";
 
 interface Args {
   command: "review" | "list-personas" | "help";
   url?: string;
   json: boolean;
   personaId: string;
+  provider: Provider;
   model?: string;
   maxOutputTokens: number;
   maxActions: number;
@@ -40,6 +45,7 @@ interface Args {
   repl: boolean;
   replOnly: boolean;
   allowSubmit: boolean;
+  allowDownloads: boolean;
   submitDataPath?: string;
   yes: boolean;
 }
@@ -49,6 +55,7 @@ function parseArgs(argv: string[]): Args {
   let url: string | undefined;
   let json = false;
   let personaId = DEFAULT_PERSONA_ID;
+  let provider: Provider = DEFAULT_PROVIDER;
   let model: string | undefined;
   let maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS;
   let maxActions = DEFAULT_MAX_ACTIONS;
@@ -58,6 +65,7 @@ function parseArgs(argv: string[]): Args {
   let repl = false;
   let replOnly = false;
   let allowSubmit = false;
+  let allowDownloads = false;
   let submitDataPath: string | undefined;
   let yes = false;
   let command: Args["command"] = "review";
@@ -78,12 +86,21 @@ function parseArgs(argv: string[]): Args {
       replOnly = true;
     } else if (a === "--allow-submit") {
       allowSubmit = true;
+    } else if (a === "--allow-downloads") {
+      allowDownloads = true;
     } else if (a === "--submit-data") {
       submitDataPath = args[++i];
     } else if (a === "--yes" || a === "-y") {
       yes = true;
     } else if (a === "--persona") {
       personaId = args[++i];
+    } else if (a === "--provider") {
+      const p = args[++i];
+      if (p !== "anthropic" && p !== "openai") {
+        console.error(`--provider must be 'anthropic' or 'openai'.`);
+        process.exit(1);
+      }
+      provider = p;
     } else if (a === "--device") {
       const d = args[++i];
       if (d !== "mobile" && d !== "desktop") {
@@ -116,6 +133,7 @@ function parseArgs(argv: string[]): Args {
     url,
     json,
     personaId,
+    provider,
     model,
     maxOutputTokens,
     maxActions,
@@ -125,13 +143,14 @@ function parseArgs(argv: string[]): Args {
     repl,
     replOnly,
     allowSubmit,
+    allowDownloads,
     submitDataPath,
     yes,
   };
 }
 
 function printHelp() {
-  const help = `persona-review — AI persona feedback for non-profit web pages (Phase 2e)
+  const help = `persona-review — AI persona feedback for non-profit web pages (Phase 2f)
 
 Usage:
   persona-review <url> [options]
@@ -139,6 +158,8 @@ Usage:
 
 Options:
   --persona <id>          Persona archetype id (default: ${DEFAULT_PERSONA_ID}).
+  --provider <name>       LLM provider: 'anthropic' or 'openai'
+                          (default: ${DEFAULT_PROVIDER}).
   --device <m|d>          Override the persona's device: 'mobile' (390x844)
                           or 'desktop' (1280x800). Default: per-persona.
   --list-personas         Print available personas and exit.
@@ -152,11 +173,15 @@ Options:
   --allow-submit          Permit ONE form submission this session and ask
                           the persona to react to the resulting thank-you
                           or error page. Requires interactive consent.
+  --allow-downloads       Permit browser downloads. Default: downloads are
+                          blocked by Playwright.
   --submit-data <path>    Override the test identity used for form fills
                           (default: ./submit-data.yaml).
   -y, --yes               Skip the --allow-submit consent prompt (for
                           automated runs).
-  --model <id>            Anthropic model (default: claude-sonnet-4-6).
+  --model <id>            Provider-specific model id
+                          (defaults: Anthropic ${DEFAULT_ANTHROPIC_MODEL},
+                          OpenAI ${DEFAULT_OPENAI_MODEL}).
   --cost-cap-usd <n>      Hard cost cap in USD per (URL, persona) session
                           (default: ${DEFAULT_COST_CAP_USD}). Includes review + all REPL turns.
   --max-actions <n>       Soft cap on browser actions per phase (default: ${DEFAULT_MAX_ACTIONS}).
@@ -167,12 +192,18 @@ Options:
   -h, --help              Show this help.
 
 Environment:
-  ANTHROPIC_API_KEY    Required.
+  ANTHROPIC_API_KEY    Required for --provider anthropic.
+  OPENAI_API_KEY       Required for --provider openai.
 
 Without --allow-submit (default), form-submit buttons are blocked at the
 browser layer. With --allow-submit, the persona fills the form using the
 shared test identity in ./submit-data.yaml (override with --submit-data),
 clicks submit ONCE, and reacts to the resulting thank-you / error message.
+
+Without --allow-downloads (default), browser downloads are blocked. With
+--allow-downloads, Playwright stores downloads in temporary browser storage;
+this tool does not save them into the project and they are deleted when the
+browser context closes.
 
 Simulation != user research. Persona output is a plausible reaction, not
 evidence — use it to notice things, not to decide things.`;
@@ -197,8 +228,12 @@ async function main() {
     process.exit(1);
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error("Error: ANTHROPIC_API_KEY environment variable is required.");
+  const requiredKey =
+    opts.provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
+  if (!process.env[requiredKey]) {
+    console.error(
+      `Error: ${requiredKey} environment variable is required for --provider ${opts.provider}.`
+    );
     process.exit(1);
   }
 
@@ -236,6 +271,7 @@ async function main() {
   };
 
   const conv = await openConversation(persona, opts.url!, {
+    provider: opts.provider,
     model: opts.model,
     maxOutputTokens: opts.maxOutputTokens,
     maxActions: opts.maxActions,
@@ -244,6 +280,7 @@ async function main() {
     device: opts.device,
     onStatus,
     allowSubmit: opts.allowSubmit,
+    allowDownloads: opts.allowDownloads,
     submitData,
   });
 
@@ -264,7 +301,7 @@ async function main() {
         renderProse(persona, review.feedback);
         console.error("");
         console.error(
-          `[model: ${review.model} — ${review.actionsTaken} review action(s) — ${review.inputTokens} in + ${review.outputTokens} out tokens — ${formatUsd(review.costUsd)} of ${formatUsd(review.costCapUsd)} cap]`
+          `[model: ${review.provider}/${review.model} — ${review.actionsTaken} review action(s) — ${review.inputTokens} in + ${review.outputTokens} out tokens — ${formatUsd(review.costUsd)} of ${formatUsd(review.costCapUsd)} cap]`
         );
       }
     }
@@ -367,7 +404,7 @@ async function replLoop(conv: PersonaConversation, persona: Persona) {
         console.log("");
         console.log(`${persona.name}: ${result.answer}`);
         console.error(
-          `[${result.actionsTaken} action(s) — ${formatUsd(result.costUsd)} of ${formatUsd(result.costCapUsd)} cap — ${formatUsd(result.costRemaining)} remaining]`
+          `[model: ${result.provider}/${result.model} — ${result.actionsTaken} action(s) — ${formatUsd(result.costUsd)} of ${formatUsd(result.costCapUsd)} cap — ${formatUsd(result.costRemaining)} remaining]`
         );
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);

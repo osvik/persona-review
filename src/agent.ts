@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { Persona } from "./persona.js";
 import {
   BrowserSession,
@@ -23,8 +22,22 @@ import {
   resolveIdentity,
   type SubmitData,
 } from "./submit-data.js";
+import { AnthropicClient } from "./llm/anthropic.js";
+import { OpenAIResponsesClient } from "./llm/openai.js";
+import type {
+  ContentBlock,
+  Message,
+  ModelClient,
+  Provider,
+  ToolDefinition,
+  ToolResultBlock,
+  ToolUseBlock,
+} from "./llm/types.js";
 
-export const DEFAULT_MODEL = "claude-sonnet-4-6";
+export const DEFAULT_PROVIDER: Provider = "anthropic";
+export const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6";
+export const DEFAULT_OPENAI_MODEL = "gpt-5.4";
+export const DEFAULT_MODEL = DEFAULT_ANTHROPIC_MODEL;
 export const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
 export const DEFAULT_MAX_ACTIONS = 15;
 export const DEFAULT_COST_CAP_USD = 1.0;
@@ -33,6 +46,7 @@ export const MAX_SUBMITS_PER_SESSION = 1;
 export type StatusCallback = (msg: string) => void;
 
 export interface OpenConversationOptions {
+  provider?: Provider;
   model?: string;
   maxOutputTokens?: number;
   maxActions?: number;
@@ -41,6 +55,7 @@ export interface OpenConversationOptions {
   device?: SessionDevice;
   onStatus?: StatusCallback;
   allowSubmit?: boolean;
+  allowDownloads?: boolean;
   submitData?: SubmitData;
 }
 
@@ -51,14 +66,15 @@ export interface PersonaConversation {
   url: string;
   session: BrowserSession;
   costTracker: CostTracker;
-  client: Anthropic;
+  client: ModelClient;
+  provider: Provider;
   model: string;
   maxOutputTokens: number;
   maxActions: number;
   costCapUsd: number;
   systemPrompt: string;
   profile: DeviceProfile;
-  messages: Anthropic.MessageParam[];
+  messages: Message[];
   totalInputTokens: number;
   totalOutputTokens: number;
   status: StatusCallback;
@@ -82,6 +98,7 @@ export function resolveDevice(
 
 export interface ReviewRun {
   feedback: Feedback;
+  provider: Provider;
   model: string;
   actionsTaken: number;
   inputTokens: number;
@@ -92,6 +109,7 @@ export interface ReviewRun {
 
 export interface FollowUpRun {
   answer: string;
+  provider: Provider;
   model: string;
   actionsTaken: number;
   inputTokens: number;
@@ -105,7 +123,7 @@ const SCROLL_TOOL = {
   name: "scroll",
   description:
     "Scroll the page. 'viewport' moves ~80% of one screen; 'page' moves ~95%.",
-  input_schema: {
+  inputSchema: {
     type: "object",
     properties: {
       direction: { type: "string", enum: ["up", "down"] },
@@ -127,7 +145,7 @@ const CLICK_TOOL = {
   name: "click",
   description:
     "Click an element by its [ref=eN] from the latest ARIA snapshot. Will not submit forms.",
-  input_schema: {
+  inputSchema: {
     type: "object",
     properties: {
       ref: { type: "string" },
@@ -141,7 +159,7 @@ const TYPE_TOOL = {
   name: "type",
   description:
     "Fill an input/textarea by [ref=eN]. Does NOT submit the form.",
-  input_schema: {
+  inputSchema: {
     type: "object",
     properties: {
       ref: { type: "string" },
@@ -156,14 +174,14 @@ const FEEDBACK_TOOL = {
   name: FEEDBACK_TOOL_NAME,
   description:
     "Submit your final structured review feedback when you're done exploring (initial review only).",
-  input_schema: FEEDBACK_TOOL_SCHEMA,
+  inputSchema: FEEDBACK_TOOL_SCHEMA,
 } as const;
 
 const FOLLOW_UP_TOOL = {
   name: FOLLOW_UP_TOOL_NAME,
   description:
     "Submit your answer to a single follow-up question (follow-up Q&A only).",
-  input_schema: FOLLOW_UP_TOOL_SCHEMA,
+  inputSchema: FOLLOW_UP_TOOL_SCHEMA,
 } as const;
 
 const REVIEW_TOOLS = [
@@ -171,28 +189,31 @@ const REVIEW_TOOLS = [
   CLICK_TOOL,
   TYPE_TOOL,
   FEEDBACK_TOOL,
-] as unknown as Anthropic.Tool[];
+] as unknown as ToolDefinition[];
 
 const FOLLOW_UP_TOOLS = [
   SCROLL_TOOL,
   CLICK_TOOL,
   TYPE_TOOL,
   FOLLOW_UP_TOOL,
-] as unknown as Anthropic.Tool[];
+] as unknown as ToolDefinition[];
 
 export async function openConversation(
   persona: Persona,
   url: string,
   opts: OpenConversationOptions = {}
 ): Promise<PersonaConversation> {
-  const model = opts.model ?? DEFAULT_MODEL;
+  const provider = opts.provider ?? DEFAULT_PROVIDER;
+  const model =
+    opts.model ??
+    (provider === "openai" ? DEFAULT_OPENAI_MODEL : DEFAULT_ANTHROPIC_MODEL);
   const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
   const maxActions = opts.maxActions ?? DEFAULT_MAX_ACTIONS;
   const costCapUsd = opts.costCapUsd ?? DEFAULT_COST_CAP_USD;
   const status = opts.onStatus ?? (() => {});
 
   const device = resolveDevice(persona.device, opts.device);
-  const costTracker = new CostTracker(costCapUsd, model);
+  const costTracker = new CostTracker(costCapUsd, provider, model);
   const allowSubmit = opts.allowSubmit ?? false;
   if (allowSubmit && !opts.submitData) {
     throw new Error(
@@ -203,12 +224,13 @@ export async function openConversation(
     device,
     fullPage: opts.fullPage ?? false,
     allowSubmit,
+    allowDownloads: opts.allowDownloads ?? false,
   });
   const profile = profileFor(device);
-  const client = new Anthropic();
+  const client = createModelClient(provider);
 
   status(
-    `[${persona.name} (${persona.id}, ${device} ${profile.viewport.width}x${profile.viewport.height}) is loading ${url}...]`
+    `[${persona.name} (${persona.id}, ${device} ${profile.viewport.width}x${profile.viewport.height}, ${provider}/${model}) is loading ${url}...]`
   );
   const { loadMs } = await session.open(url);
   const initialObservation = await session.observe();
@@ -229,6 +251,7 @@ export async function openConversation(
     session,
     costTracker,
     client,
+    provider,
     model,
     maxOutputTokens,
     maxActions,
@@ -255,6 +278,11 @@ export async function closeConversation(
   if (conv.closed) return;
   conv.closed = true;
   await conv.session.close();
+}
+
+function createModelClient(provider: Provider): ModelClient {
+  if (provider === "openai") return new OpenAIResponsesClient();
+  return new AnthropicClient();
 }
 
 export async function runReviewLoop(
@@ -287,6 +315,7 @@ export async function runReviewLoop(
   conv.reviewCompleted = true;
   return {
     feedback,
+    provider: conv.provider,
     model: conv.model,
     actionsTaken,
     inputTokens: conv.totalInputTokens,
@@ -327,11 +356,11 @@ export async function runFollowUpTurn(
     // unanswered final-tool calls (submit_feedback / submit_answer) from
     // the prior assistant turn, then attach a fresh observation + question.
     const observation = await conv.session.observe();
-    const blocks: Anthropic.ContentBlockParam[] = [];
+    const blocks: ContentBlock[] = [];
     for (const t of unansweredToolUses(conv.messages)) {
       blocks.push({
         type: "tool_result",
-        tool_use_id: t.id,
+        toolUseId: t.id,
         content:
           t.name === FEEDBACK_TOOL_NAME
             ? "Review feedback received. The user now has a follow-up question."
@@ -353,6 +382,7 @@ export async function runFollowUpTurn(
 
   return {
     answer: parsed.answer,
+    provider: conv.provider,
     model: conv.model,
     actionsTaken,
     inputTokens: conv.totalInputTokens,
@@ -377,7 +407,7 @@ export async function runReview(
 }
 
 interface ToolLoopConfig<T> {
-  tools: Anthropic.Tool[];
+  tools: ToolDefinition[];
   finalToolName: string;
   finalLabel: string;
   parseFinal: (input: unknown) => T;
@@ -394,34 +424,22 @@ async function runToolLoop<T>(
       ? { type: "tool" as const, name: config.finalToolName }
       : { type: "any" as const };
 
-    const response = await conv.client.messages.create({
+    const response = await conv.client.createResponse({
       model: conv.model,
-      max_tokens: conv.maxOutputTokens,
-      system: [
-        {
-          type: "text",
-          text: conv.systemPrompt,
-          cache_control: { type: "ephemeral" },
-        },
-      ],
+      maxOutputTokens: conv.maxOutputTokens,
+      systemPrompt: conv.systemPrompt,
       tools: config.tools,
-      tool_choice: toolChoice,
-      messages: withCacheBreakpoint(conv.messages),
+      toolChoice,
+      messages: conv.messages,
     });
 
-    const cacheReadTokens =
-      (response.usage as { cache_read_input_tokens?: number })
-        .cache_read_input_tokens ?? 0;
-    const cacheWriteTokens =
-      (response.usage as { cache_creation_input_tokens?: number })
-        .cache_creation_input_tokens ?? 0;
-    conv.totalInputTokens += response.usage.input_tokens;
-    conv.totalOutputTokens += response.usage.output_tokens;
+    conv.totalInputTokens += response.usage.inputTokens;
+    conv.totalOutputTokens += response.usage.outputTokens;
     const { total } = conv.costTracker.add(
-      response.usage.input_tokens,
-      response.usage.output_tokens,
-      cacheReadTokens,
-      cacheWriteTokens
+      response.usage.inputTokens,
+      response.usage.outputTokens,
+      response.usage.cacheReadTokens,
+      response.usage.cacheWriteTokens
     );
 
     if (conv.costTracker.exceeded()) {
@@ -431,18 +449,17 @@ async function runToolLoop<T>(
     }
 
     const toolUses = response.content.filter(
-      (b): b is Extract<typeof b, { type: "tool_use" }> =>
-        b.type === "tool_use"
+      (b): b is ToolUseBlock => b.type === "tool_use"
     );
     if (!toolUses.length) {
       throw new Error(
-        `Model did not call a tool. Stop reason: ${response.stop_reason}.`
+        `Model did not call a tool. Stop reason: ${response.stopReason}.`
       );
     }
 
     conv.messages.push({
       role: "assistant",
-      content: response.content as unknown as Anthropic.ContentBlockParam[],
+      content: response.content,
     });
 
     const finalCall = toolUses.find((t) => t.name === config.finalToolName);
@@ -451,14 +468,14 @@ async function runToolLoop<T>(
       return { result, actionsTaken };
     }
 
-    const toolResults: Anthropic.ToolResultBlockParam[] = [];
+    const toolResults: ToolResultBlock[] = [];
     for (const tu of toolUses) {
       if (actionsTaken >= conv.maxActions) {
         toolResults.push({
           type: "tool_result",
-          tool_use_id: tu.id,
+          toolUseId: tu.id,
           content: `Action limit reached (${conv.maxActions}). Submit your ${config.finalLabel} now via ${config.finalToolName}.`,
-          is_error: true,
+          isError: true,
         });
         continue;
       }
@@ -484,24 +501,19 @@ async function runToolLoop<T>(
 }
 
 function unansweredToolUses(
-  messages: Anthropic.MessageParam[]
+  messages: Message[]
 ): { id: string; name: string }[] {
   const last = messages[messages.length - 1];
   if (!last || last.role !== "assistant") return [];
-  const content = last.content;
-  if (typeof content === "string") return [];
-  return (content as Anthropic.ContentBlockParam[])
-    .filter(
-      (b): b is { type: "tool_use"; id: string; name: string; input: unknown } =>
-        (b as { type: string }).type === "tool_use"
-    )
+  return last.content
+    .filter((b): b is ToolUseBlock => b.type === "tool_use")
     .map((b) => ({ id: b.id, name: b.name }));
 }
 
 async function executeAction(
   conv: PersonaConversation,
-  tu: { id: string; name: string; input: unknown }
-): Promise<Anthropic.ToolResultBlockParam> {
+  tu: ToolUseBlock
+): Promise<ToolResultBlock> {
   const session = conv.session;
   const status = conv.status;
   const persona = conv.persona;
@@ -519,9 +531,9 @@ async function executeAction(
     const r = await session.scroll(direction, amount);
     return {
       type: "tool_result",
-      tool_use_id: tu.id,
+      toolUseId: tu.id,
       content: r.ok ? "scrolled" : `error: ${r.reason}`,
-      is_error: !r.ok,
+      isError: !r.ok,
     };
   }
 
@@ -538,7 +550,7 @@ async function executeAction(
       );
       return {
         type: "tool_result",
-        tool_use_id: tu.id,
+        toolUseId: tu.id,
         content:
           "submitted — the form was sent. The next observation shows the result page (thank-you, error, validation message, or redirect). Do NOT submit again. Read the result, then call submit_feedback (review) or submit_answer (follow-up) with the persona's reaction to that specific thank-you / error message.",
       };
@@ -546,9 +558,9 @@ async function executeAction(
     status(`[${persona.name} clicks ref=${input.ref} — ${label}]`);
     return {
       type: "tool_result",
-      tool_use_id: tu.id,
+      toolUseId: tu.id,
       content: r.ok ? "clicked" : `error: ${r.reason}`,
-      is_error: !r.ok,
+      isError: !r.ok,
     };
   }
 
@@ -559,17 +571,17 @@ async function executeAction(
     const r = await session.type(input.ref, input.text);
     return {
       type: "tool_result",
-      tool_use_id: tu.id,
+      toolUseId: tu.id,
       content: r.ok ? "typed" : `error: ${r.reason}`,
-      is_error: !r.ok,
+      isError: !r.ok,
     };
   }
 
   return {
     type: "tool_result",
-    tool_use_id: tu.id,
+    toolUseId: tu.id,
     content: `Unknown tool: ${tu.name}`,
-    is_error: true,
+    isError: true,
   };
 }
 
@@ -579,7 +591,7 @@ function buildInitialReviewContent(
   profile: { device: string; viewport: { width: number; height: number } },
   allowSubmit: boolean,
   submitData: SubmitData | undefined
-): Anthropic.ContentBlockParam[] {
+): ContentBlock[] {
   const personaCard = JSON.stringify(persona, null, 2);
   const visiblePct = computeVisiblePct(profile.viewport.height, obs.documentHeight);
   const submissionBlock = buildSubmissionBlock(persona, allowSubmit, submitData);
@@ -601,11 +613,8 @@ function buildInitialReviewContent(
     },
     {
       type: "image",
-      source: {
-        type: "base64",
-        media_type: obs.screenshotMediaType,
-        data: obs.screenshotBase64,
-      },
+      mediaType: obs.screenshotMediaType,
+      data: obs.screenshotBase64,
     },
     {
       type: "text",
@@ -627,7 +636,7 @@ function buildInitialFollowUpContent(
   question: string,
   allowSubmit: boolean,
   submitData: SubmitData | undefined
-): Anthropic.ContentBlockParam[] {
+): ContentBlock[] {
   const personaCard = JSON.stringify(persona, null, 2);
   const visiblePct = computeVisiblePct(profile.viewport.height, obs.documentHeight);
   const submissionBlock = buildSubmissionBlock(persona, allowSubmit, submitData);
@@ -648,11 +657,8 @@ function buildInitialFollowUpContent(
     },
     {
       type: "image",
-      source: {
-        type: "base64",
-        media_type: obs.screenshotMediaType,
-        data: obs.screenshotBase64,
-      },
+      mediaType: obs.screenshotMediaType,
+      data: obs.screenshotBase64,
     },
     {
       type: "text",
@@ -671,7 +677,7 @@ function buildInitialFollowUpContent(
 function buildFollowUpContent(
   obs: PageObservation,
   question: string
-): Anthropic.ContentBlockParam[] {
+): ContentBlock[] {
   return [
     {
       type: "text",
@@ -680,11 +686,8 @@ function buildFollowUpContent(
     },
     {
       type: "image",
-      source: {
-        type: "base64",
-        media_type: obs.screenshotMediaType,
-        data: obs.screenshotBase64,
-      },
+      mediaType: obs.screenshotMediaType,
+      data: obs.screenshotBase64,
     },
     {
       type: "text",
@@ -703,7 +706,7 @@ function buildObservationContent(
   obs: PageObservation,
   remainingUsd: number,
   remainingActions: number
-): Anthropic.ContentBlockParam[] {
+): ContentBlock[] {
   return [
     {
       type: "text",
@@ -714,11 +717,8 @@ function buildObservationContent(
     },
     {
       type: "image",
-      source: {
-        type: "base64",
-        media_type: obs.screenshotMediaType,
-        data: obs.screenshotBase64,
-      },
+      mediaType: obs.screenshotMediaType,
+      data: obs.screenshotBase64,
     },
     {
       type: "text",
@@ -729,44 +729,6 @@ function buildObservationContent(
         "\n```",
     },
   ];
-}
-
-function withCacheBreakpoint(
-  messages: Anthropic.MessageParam[]
-): Anthropic.MessageParam[] {
-  // Find the last assistant turn — caching everything up to (and including)
-  // it means subsequent turns reuse the prior conversation at 0.1x cost.
-  let lastAssistantIdx = -1;
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].role === "assistant") {
-      lastAssistantIdx = i;
-      break;
-    }
-  }
-  if (lastAssistantIdx === -1) return messages;
-  return messages.map((msg, idx) => {
-    if (idx !== lastAssistantIdx) return msg;
-    if (typeof msg.content === "string") {
-      return {
-        role: msg.role,
-        content: [
-          {
-            type: "text" as const,
-            text: msg.content,
-            cache_control: { type: "ephemeral" as const },
-          },
-        ],
-      };
-    }
-    const blocks = msg.content as Anthropic.ContentBlockParam[];
-    if (!blocks.length) return msg;
-    const cloned = blocks.map((b, i) =>
-      i === blocks.length - 1
-        ? { ...b, cache_control: { type: "ephemeral" as const } }
-        : b
-    );
-    return { role: msg.role, content: cloned };
-  });
 }
 
 function buildSubmissionBlock(

@@ -34,7 +34,7 @@ Reactions are written in the page's own language, as a native speaker.
    per session**, and reacts to the resulting thank-you message or error
    in their final feedback / answer.
 
-It does **not yet**: authenticate. Custom personas come from YAML files
+It does not: authenticate. Custom personas come from YAML files
 in `personas/` — drop your own in there.
 
 **Scope:** every persona assumes some interest in the cause. This tool is
@@ -54,8 +54,8 @@ different goals and frustrations.
          │ persona + snapshot
          ▼
 ┌─────────────────┐        ┌──────────────────┐
-│  Claude         │  ◀──▶  │  Anthropic API   │
-│  (Sonnet 4.6)   │        │                  │
+│  LLM provider   │  ◀──▶  │  Anthropic API   │
+│  adapter        │        │  or OpenAI API   │
 └─────────────────┘        └──────────────────┘
 ```
 
@@ -63,8 +63,8 @@ Entry points planned:
 
 | Entry point | Status | How to run |
 |---|---|---|
-| **CLI** (`persona-review`) | ✅ done (Phase 2e) | `npx persona-review <url>` |
-| **MCP server** (`persona-review-mcp`) | ⏳ Phase 3 | Mounts into Claude Code / Codex / Gemini CLI as a tool |
+| **CLI** (`persona-review`) | ✅ done | `npx persona-review <url>` |
+| **MCP server** (`persona-review-mcp`) | TBD | Mounts into Claude Code / Codex / Gemini CLI as a tool |
 
 ---
 
@@ -73,6 +73,7 @@ Entry points planned:
 - **[Git](https://git-scm.com/install/)** - Version control.
 - **[Node.js](https://nodejs.org/en/download) 20 or newer**
 - An **Anthropic API key** — [console.anthropic.com](https://console.anthropic.com)
+  — or an **OpenAI API key** for `--provider openai` [platform.openai.com](https://platform.openai.com/)
 - About 200 MB of disk for Chromium (installed via Playwright)
 
 ---
@@ -80,7 +81,7 @@ Entry points planned:
 ## Install
 
 ```bash
-git clone <this-repo>
+git clone https://codeberg.org/osvik/persona-review.git
 cd persona-review
 npm install
 npx playwright install chromium
@@ -101,12 +102,21 @@ The CLI calls Anthropic's API directly. **[Set your key](https://platform.claude
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Or put it in a `.env` and source it before running. The CLI reads only this
-one variable; nothing else leaves your machine except the HTTP request to
-Anthropic and the page-load request to the target URL.
+To use OpenAI instead, set `OPENAI_API_KEY` and pass `--provider openai`:
 
-**Model:** defaults to `claude-sonnet-4-6`. Override with `--model`, e.g.
-`--model claude-opus-4-7` for deeper reviews.
+```bash
+export OPENAI_API_KEY=sk-...
+npx persona-review https://example.org --provider openai
+```
+
+Or put keys in a `.env` and source it before running. The CLI reads only the
+key for the selected provider; nothing else leaves your machine except the
+HTTP request to the selected LLM provider and the page-load request to the
+target URL.
+
+**Model:** Anthropic defaults to `claude-sonnet-4-6`; OpenAI defaults to
+`gpt-5.4`. Override either with `--model`, e.g. `--model claude-opus-4-7` or
+`--model gpt-5.5`.
 
 ---
 
@@ -118,7 +128,7 @@ Anthropic and the page-load request to the target URL.
 npx persona-review --help
 ```
 
-### Basic review
+### Basic review with Anthropic model
 
 ```bash
 npx persona-review https://example.org/
@@ -230,7 +240,7 @@ Hard limit: at most one successful submission per session.
 Continue and submit the form? [y/N]
 ```
 
-Customize the identity by editing `./submit-data.yaml` or passing
+Customize the identity by passing
 `--submit-data /path/to/your.yaml`. All personas share the same identity
 so you don't end up with one CRM record per persona — search the CRM for
 `PersonaReview` and the test email after the run, then delete.
@@ -274,6 +284,8 @@ persona-review <url> [options]
 persona-review --list-personas
 
   --persona <id>           Persona archetype id (default: curious-newcomer).
+  --provider <name>        LLM provider: 'anthropic' or 'openai'
+                           (default: anthropic).
   --device <m|d>           Override the persona's device: 'mobile' or 'desktop'.
   --list-personas          Print available personas and exit.
   --json                   Emit JSON instead of prose. Mutually exclusive
@@ -285,9 +297,12 @@ persona-review --list-personas
   --allow-submit           Permit ONE form submission this session. Persona
                            fills the form with the shared test identity and
                            reacts to the resulting page. Requires consent.
+  --allow-downloads        Permit browser downloads. Default: downloads are
+                           blocked by Playwright.
   --submit-data <path>     Override the test identity (default: ./submit-data.yaml).
   -y, --yes                Skip the --allow-submit consent prompt.
-  --model <id>             Anthropic model id (default: claude-sonnet-4-6).
+  --model <id>             Provider-specific model id (defaults:
+                           Anthropic claude-sonnet-4-6, OpenAI gpt-5.4).
   --cost-cap-usd <n>       Hard cost cap in USD per (URL, persona) session
                            (default: 1.0). Includes review + all REPL turns.
   --max-actions <n>        Soft cap on browser actions per phase (default: 15).
@@ -388,7 +403,7 @@ Notes:
   device, accessibility needs) and avoid demographic caricature.
 
 You can drop your own custom YAML files into the same `personas/` folder
-and they'll be picked up by `--list-personas`.
+and they'll be picked up by `--list-personas`. If you edit the existing files they may be overwritten when you update the software.
 
 ---
 
@@ -432,8 +447,13 @@ reviews agree on, and treat the overlap as the signal.
   `submit-data.yaml` and submits **at most once per session**. The same
   test identity is used across all personas so records stay easy to find
   and delete in the target site's CRM.
+- **Downloads are opt-in.** Default is no browser downloads. Pass
+  `--allow-downloads` to let Playwright accept downloads for the session.
+  Accepted downloads stay in Playwright's temporary browser storage; this
+  tool does not save them into the project, and they are deleted when the
+  browser context closes.
 - **Local-only.** No servers we operate. Traffic goes only to the target URL
-  and to the Anthropic API.
+  and to the selected LLM provider API.
 - **Cost cap.** Every session enforces a hard USD cap (default $1, override
   with `--cost-cap-usd`). The cap is **per `(URL, persona)` session** —
   shared across the review and every follow-up REPL turn — and aborts the
@@ -455,6 +475,7 @@ Source layout:
 src/
   browser.ts      # BrowserSession: open / observe / scroll / click / type / close
                   #   click() honors session.allowSubmit and reports submitted=true
+                  #   downloads are blocked unless allowDownloads=true
   persona.ts      # Zod schema + YAML loader (listPersonas, loadPersonaById)
   submit-data.ts  # Test-identity Zod schema + loader (resolves first_name to
                   #   the persona's name when YAML leaves it null)

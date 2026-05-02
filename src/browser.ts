@@ -66,6 +66,7 @@ export interface SessionOptions {
   jpegQuality?: number;
   timeoutMs?: number;
   allowSubmit?: boolean;
+  allowDownloads?: boolean;
 }
 
 export class BrowserSession {
@@ -79,6 +80,7 @@ export class BrowserSession {
   private fullPage: boolean;
   private jpegQuality: number;
   private timeoutMs: number;
+  private allowDownloads: boolean;
 
   constructor(opts: SessionOptions = {}) {
     this.profile = profileFor(opts.device ?? "desktop");
@@ -86,6 +88,7 @@ export class BrowserSession {
     this.jpegQuality = opts.jpegQuality ?? 70;
     this.timeoutMs = opts.timeoutMs ?? 30_000;
     this.allowSubmit = opts.allowSubmit ?? false;
+    this.allowDownloads = opts.allowDownloads ?? false;
   }
 
   async open(url: string): Promise<{ loadMs: number }> {
@@ -97,6 +100,7 @@ export class BrowserSession {
       isMobile: this.profile.isMobile,
       hasTouch: this.profile.hasTouch,
       userAgent: this.profile.userAgent,
+      acceptDownloads: this.allowDownloads,
     });
     this.page = await this.context.newPage();
     this.page.on("console", (msg) => {
