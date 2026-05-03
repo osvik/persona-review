@@ -503,6 +503,12 @@ reviews agree on, and treat the overlap as the signal.
 
 ## Development
 
+Important: before you do any development, note that this software is licensed
+under the GNU Affero General Public License v3.0. Any modification of the
+software, or cloud use such as providing access through a graphical user
+interface or MCP server, must comply with the
+**[requirements of this license](https://choosealicense.com/licenses/agpl-3.0/)**.
+
 ```bash
 npm run typecheck    # type-check without emitting
 npm run build        # compile to dist/
@@ -513,21 +519,28 @@ Source layout:
 
 ```
 src/
-  browser.ts      # BrowserSession: open / observe / scroll / click / type / close
-                  #   click() honors session.allowSubmit and reports submitted=true
-                  #   downloads are blocked unless allowDownloads=true
-  persona.ts      # Zod schema + YAML loader (listPersonas, loadPersonaById)
-  submit-data.ts  # Test-identity Zod schema + loader (resolves first_name to
-                  #   the persona's name when YAML leaves it null)
-  review.ts       # Feedback + answer schemas, tool schemas, system prompt
-                  #   builder (conditional submission policy section)
-  agent.ts        # Long-lived PersonaConversation:
-                  #   openConversation → runReviewLoop → runFollowUpTurn (×N) → close
-                  #   tracks submitsTaken (cap = MAX_SUBMITS_PER_SESSION = 1)
-  cost.ts         # Per-model pricing + CostTracker (cap enforcement)
-  cli.ts          # CLI entry: review, --repl, --repl-only, --allow-submit consent
+  agent.ts        # PersonaConversation orchestration, review loop, REPL turns,
+                  #   provider/model selection, action caps, and submit cap.
+  browser.ts      # Playwright browser session: open, observe, scroll, click,
+                  #   type, close; blocks submits/downloads unless enabled.
+  cli.ts          # CLI entry: flags, persona loading, provider key checks,
+                  #   --allow-submit consent, JSON/prose output, REPL.
+  cost.ts         # Per-provider/model pricing and CostTracker cap enforcement.
+  persona.ts      # Persona Zod schema + YAML loader/listing helpers.
+  review.ts       # Feedback/follow-up schemas, tool schemas, and system prompt
+                  #   builder including conditional submission policy.
+  submit-data.ts  # Test-identity Zod schema + loader; resolves first_name to
+                  #   the persona's name when YAML leaves it null.
+  llm/
+    types.ts      # Shared provider-neutral message, tool, usage, and client
+                  #   interfaces.
+    anthropic.ts  # Anthropic Messages adapter.
+    openai.ts     # OpenAI Responses API adapter.
 personas/
   *.yaml          # 10 archetype files; drop your own in here too
 submit-data.yaml  # Default shared test identity template for --allow-submit
                   #   copy it and pass the copy with --submit-data
+package.json      # Package metadata, CLI bin, npm scripts, dependencies.
+tsconfig.json     # TypeScript compiler settings.
+LICENSE           # GNU Affero General Public License v3.0.
 ```
