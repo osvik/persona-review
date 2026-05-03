@@ -150,7 +150,7 @@ function parseArgs(argv: string[]): Args {
 }
 
 function printHelp() {
-  const help = `persona-review — AI persona feedback for non-profit web pages (Phase 2f)
+  const help = `persona-review — AI persona feedback for non-profit web pages
 
 Usage:
   npm run review -- <url> [options]
