@@ -115,9 +115,9 @@ export class BrowserSession {
     });
     await this.page.goto(url, { waitUntil: "networkidle", timeout: this.timeoutMs });
     // Real users don't act in the same instant DOMContentLoaded fires — give
-    // the page's DCL handlers a 200–400ms cushion to wire up before we
+    // the page's DCL handlers a 400-500ms cushion to wire up before we
     // observe or interact, so the persona doesn't critique a half-booted UI.
-    const settleMs = 200 + Math.floor(Math.random() * 201);
+    const settleMs = 400 + Math.floor(Math.random() * 101);
     await this.page.waitForTimeout(settleMs);
     return { loadMs: Date.now() - start };
   }
