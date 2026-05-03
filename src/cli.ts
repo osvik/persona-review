@@ -153,8 +153,8 @@ function printHelp() {
   const help = `persona-review — AI persona feedback for non-profit web pages (Phase 2f)
 
 Usage:
-  persona-review <url> [options]
-  persona-review --list-personas
+  npm run review -- <url> [options]
+  npm run review -- --list-personas
 
 Options:
   --persona <id>          Persona archetype id (default: ${DEFAULT_PERSONA_ID}).

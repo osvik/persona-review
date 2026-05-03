@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "build": "tsc && chmod +x dist/cli.js",
+    "review": "node dist/cli.js",
     "start": "node dist/cli.js",
     "typecheck": "tsc --noEmit"
   },

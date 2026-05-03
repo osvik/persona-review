@@ -90,7 +90,7 @@ Entry points planned:
 
 | Entry point | Status | How to run |
 |---|---|---|
-| **CLI** (`persona-review`) | ✅ done | `npx persona-review <url>` |
+| **CLI** (`persona-review`) | ✅ done | `npm run review -- <url>` |
 | **MCP server** (`persona-review-mcp`) | TBD | Mounts into Claude Code / Codex / Gemini CLI as a tool |
 
 ---
@@ -133,7 +133,7 @@ To use OpenAI instead, set `OPENAI_API_KEY` and pass `--provider openai`:
 
 ```bash
 export OPENAI_API_KEY=sk-...
-npx persona-review https://example.org --provider openai
+npm run review -- https://example.org --provider openai
 ```
 
 Or put keys in a `.env` and source it before running. The CLI reads only the
@@ -152,19 +152,19 @@ target URL.
 ### Help
 
 ```bash
-npx persona-review --help
+npm run review -- --help
 ```
 
 ### Basic review with Anthropic model
 
 ```bash
-npx persona-review https://example.org/
+npm run review -- https://example.org/
 ```
 
 ### List the personas
 
 ```bash
-npx persona-review --list-personas
+npm run review -- --list-personas
 ```
 
 Uses the default persona (`curious-newcomer`).
@@ -172,8 +172,8 @@ Uses the default persona (`curious-newcomer`).
 ### Pick a persona
 
 ```bash
-npx persona-review https://example.org --persona cautious-researcher
-npx persona-review https://example.org --persona time-pressed-mobile-reader
+npm run review -- https://example.org --persona cautious-researcher
+npm run review -- https://example.org --persona time-pressed-mobile-reader
 ```
 
 ### Different language
@@ -182,14 +182,14 @@ The page's language is detected from `<html lang>` and the LLM responds as a
 native speaker of that language. No flag needed:
 
 ```bash
-npx persona-review https://example.org/es/ --persona engaged-regular-supporter
+npm run review -- https://example.org/es/ --persona engaged-regular-supporter
 # Daniel's reactions come back in Spanish
 ```
 
 ### JSON output
 
 ```bash
-npx persona-review https://example.org --json > review.json
+npm run review -- https://example.org --json > review.json
 ```
 
 `--json` cannot be combined with `--repl` or `--repl-only`.
@@ -199,7 +199,7 @@ npx persona-review https://example.org --json > review.json
 After the review, ask the same persona questions about the same page:
 
 ```bash
-npx persona-review https://example.org --persona cautious-researcher --repl
+npm run review -- https://example.org --persona cautious-researcher --repl
 ```
 
 ```
@@ -219,7 +219,7 @@ goes. The current "About" section gestures at it but the numbers aren't there.
 Skip the review entirely and go straight to questions:
 
 ```bash
-npx persona-review https://example.org --persona cautious-researcher --repl-only
+npm run review -- https://example.org --persona cautious-researcher --repl-only
 ```
 
 The browser session, page state, and conversation history are reused across
@@ -240,7 +240,7 @@ updates may overwrite that file.
 
 ```bash
 cp submit-data.yaml submit-data.local.yaml
-npx persona-review https://example.org --persona engaged-regular-supporter --allow-submit --submit-data ./submit-data.local.yaml
+npm run review -- https://example.org --persona engaged-regular-supporter --allow-submit --submit-data ./submit-data.local.yaml
 ```
 
 The CLI prints a consent prompt summarizing the test identity and target
@@ -308,14 +308,14 @@ recognizes by label.
 For automated runs (CI etc.) pass `--yes` to skip the prompt:
 
 ```bash
-npx persona-review https://example.org --allow-submit --submit-data ./submit-data.local.yaml --yes
+npm run review -- https://example.org --allow-submit --submit-data ./submit-data.local.yaml --yes
 ```
 
 ### All flags
 
 ```
-persona-review <url> [options]
-persona-review --list-personas
+npm run review -- <url> [options]
+npm run review -- --list-personas
 
   --persona <id>           Persona archetype id (default: curious-newcomer).
   --provider <name>        LLM provider: 'anthropic' or 'openai'
@@ -462,7 +462,7 @@ Ten archetypes, all assuming **at least some interest in the cause**:
 | `information-thorough-reader` | Marcus — reads everything before deciding | desktop | medium-high | committed | high |
 | `recurring-small-amount-giver` | Priya — gives a modest amount monthly | either | medium | regular | medium |
 
-Run `npx persona-review --list-personas` for the same list with full role
+Run `npm run review -- --list-personas` for the same list with full role
 descriptions.
 
 ---
@@ -512,7 +512,7 @@ interface or MCP server, must comply with the
 ```bash
 npm run typecheck    # type-check without emitting
 npm run build        # compile to dist/
-npm start -- <url>   # run the compiled CLI
+npm run review -- <url>   # run the compiled CLI
 ```
 
 Source layout:
