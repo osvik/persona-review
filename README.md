@@ -30,6 +30,7 @@ Reactions are written in the page's own language, as a native speaker.
   - [Reproducibility](#reproducibility)
   - [Scope and safety](#scope-and-safety)
   - [Development](#development)
+    - [Build it](#build-it)
 
 ---
 
@@ -104,6 +105,8 @@ Entry points planned:
   — or an **OpenAI API key** for `--provider openai` [platform.openai.com](https://platform.openai.com/)
 - About 200 MB of disk for Chromium (installed via Playwright)
 
+**Note:** If you prefer you can use it in a server trough ssh or using the **[free Google Cloud Shell](https://shell.cloud.google.com/?pli=1&show=terminal)**. I've tested it also using Cloud Shell. 
+
 ---
 
 ## Install via npm (npx)
@@ -148,7 +151,7 @@ The CLI calls Anthropic's API directly. **[Set your key](https://platform.claude
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-To use OpenAI instead, set `OPENAI_API_KEY` and pass `--provider openai`:
+To use **OpenAI** instead, [create your key](https://platform.openai.com/api-keys) set `OPENAI_API_KEY` and pass `--provider openai`:
 
 ```bash
 export OPENAI_API_KEY=sk-...
@@ -208,12 +211,7 @@ npm run review -- https://example.org --persona time-pressed-mobile-reader
 ### Different language
 
 The page's language is detected from `<html lang>` and the LLM responds as a
-native speaker of that language. No flag needed:
-
-```bash
-npm run review -- https://example.org/es/ --persona engaged-regular-supporter
-# Daniel's reactions come back in Spanish
-```
+native speaker of that language. No flag needed.
 
 ### JSON output
 
@@ -404,9 +402,11 @@ can tell within two seconds what this is about and what they want from me.
 But the form asks for my phone number and I don't love giving that out —
 especially without a clear word on what they'll do with it.
 
-Liked:       clear purpose, strong imagery, short form
-Confused by: what happens after I sign, why they need a phone number
-Abandoned:   no — I'd probably sign, but reluctantly
+Liked: clear purpose, strong imagery, short form
+
+Confused by: what happens after I sign, why they need a phone number.
+
+Abandoned:   no — I'd probably sign, but reluctantly.
 
 Friction:
   - [medium] phone number field: "I don't want calls from an organisation"
@@ -537,6 +537,8 @@ under the GNU Affero General Public License v3.0. Any modification of the
 software, or cloud use such as providing access through a graphical user
 interface or MCP server, must comply with the
 **[requirements of this license](https://choosealicense.com/licenses/agpl-3.0/)**.
+
+### Build it
 
 ```bash
 npm run typecheck    # type-check without emitting
