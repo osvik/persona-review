@@ -1,17 +1,20 @@
 {
   "name": "persona-review",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "AI persona feedback tool for web pages — visit a page as a simulated persona and get reactions, friction points, and suggestions.",
   "type": "module",
   "bin": {
-    "persona-review": "./dist/cli.js"
+    "persona-review": "dist/cli.js"
   },
   "files": [
     "dist",
+    "personas",
+    "submit-data.yaml",
     "README.md"
   ],
   "scripts": {
     "build": "tsc && chmod +x dist/cli.js",
+    "prepublishOnly": "npm run build",
     "review": "node dist/cli.js",
     "start": "node dist/cli.js",
     "typecheck": "tsc --noEmit"

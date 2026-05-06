@@ -9,7 +9,8 @@ Reactions are written in the page's own language, as a native speaker.
   - [What it does today](#what-it-does-today)
   - [Architecture](#architecture)
   - [Prerequisites](#prerequisites)
-  - [Install](#install)
+  - [Install via npm (npx)](#install-via-npm-npx)
+  - [Install (development)](#install-development)
   - [Configure the LLM provider](#configure-the-llm-provider)
   - [Usage](#usage)
     - [Help](#help)
@@ -90,7 +91,7 @@ Entry points planned:
 
 | Entry point | Status | How to run |
 |---|---|---|
-| **CLI** (`persona-review`) | ✅ done | `npm run review -- <url>` |
+| **CLI** (`persona-review`) | ✅ done | `npx persona-review <url>` or `npm run review -- <url>` |
 | **MCP server** (`persona-review-mcp`) | TBD | Mounts into Claude Code / Codex / Gemini CLI as a tool |
 
 ---
@@ -105,7 +106,25 @@ Entry points planned:
 
 ---
 
-## Install
+## Install via npm (npx)
+
+No git clone needed. Install Chromium once, then run directly with `npx`:
+
+```bash
+npx playwright install chromium
+export ANTHROPIC_API_KEY=sk-ant-...
+npx persona-review https://example.org/
+```
+
+`npx` downloads and runs the latest published version automatically. All
+options described in [Usage](#usage) work the same way — replace
+`npm run review --` with `npx persona-review` throughout.
+
+---
+
+## Install (development)
+
+Use this if you want to modify the source or contribute:
 
 ```bash
 git clone https://codeberg.org/osvik/persona-review.git
@@ -149,10 +168,20 @@ target URL.
 
 ## Usage
 
+All examples below use the development `npm run review --` form. If you
+installed via npm, replace that prefix with `npx persona-review`:
+
+```bash
+npm run review -- https://example.org/   # development install
+npx persona-review https://example.org/  # npm install
+```
+
 ### Help
 
 ```bash
 npm run review -- --help
+# or
+npx persona-review --help
 ```
 
 ### Basic review with Anthropic model
