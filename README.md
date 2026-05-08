@@ -14,6 +14,7 @@ Reactions are written in the page's own language, as a native speaker.
   - [Configure the LLM provider](#configure-the-llm-provider)
   - [Usage](#usage)
     - [Help](#help)
+    - [User defaults](#user-defaults)
     - [Basic review with Anthropic model](#basic-review-with-anthropic-model)
     - [List the personas](#list-the-personas)
     - [Pick a persona](#pick-a-persona)
@@ -186,6 +187,61 @@ npm run review -- --help
 # or
 npx persona-review --help
 ```
+
+### User defaults
+
+On first run, persona-review creates an empty defaults file:
+
+- macOS / Linux: `$HOME/.persona-review/defaults.yaml`
+- Windows: `%USERPROFILE%\.persona-review\defaults.yaml`
+
+Leave it empty to use the built-in defaults. Add YAML keys there to change
+your normal defaults without editing source code or rebuilding, which is
+especially useful with `npx persona-review`.
+
+Precedence is:
+
+1. Built-in software defaults.
+2. User defaults from `defaults.yaml`.
+3. Options passed on the command line.
+
+Example:
+
+```yaml
+persona: cautious-researcher
+provider: openai
+model: gpt-5.4
+device: desktop
+cost_cap_usd: 2
+max_actions: 20
+max_tokens: 4096
+full_page_snapshot: true
+allow_downloads: true
+submit_data: /Users/me/.persona-review/submit-data.local.yaml
+```
+
+Then a shorter command uses those defaults:
+
+```bash
+npx persona-review https://example.org/
+```
+
+Command-line options still win for that run:
+
+```bash
+npx persona-review https://example.org/ --persona time-pressed-mobile-reader --provider anthropic
+```
+
+For boolean defaults set to `true`, use the matching `--no-...` flag to
+turn them off for one run, for example `--no-json`, `--no-repl`,
+`--no-allow-submit`, `--no-allow-downloads`, `--no-full-page-snapshot`, or
+`--no-yes`.
+
+Supported defaults keys are `persona`, `provider`, `model`, `device`,
+`json`, `repl`, `repl_only`, `allow_submit`, `allow_downloads`,
+`submit_data`, `yes`, `max_tokens`, `max_actions`, `cost_cap_usd`, and
+`full_page_snapshot`. The equivalent long flag names with hyphens, such as
+`max-tokens` and `allow-downloads`, are also accepted.
 
 ### Basic review with Anthropic model
 
@@ -375,6 +431,8 @@ npm run review -- --list-personas
   --max-tokens <n>         Max output tokens per LLM call (default: 4096).
   --full-page-snapshot     Send a full-page screenshot each turn (default:
                            viewport only — the persona must scroll to see more).
+  --no-<boolean-flag>      Disable a boolean option set in user defaults
+                           for this run, e.g. --no-json or --no-repl.
   -h, --help               Show help.
 ```
 
@@ -558,6 +616,7 @@ src/
   cli.ts          # CLI entry: flags, persona loading, provider key checks,
                   #   --allow-submit consent, JSON/prose output, REPL.
   cost.ts         # Per-provider/model pricing and CostTracker cap enforcement.
+  defaults.ts     # User defaults file creation/loading and option validation.
   persona.ts      # Persona Zod schema + YAML loader/listing helpers.
   review.ts       # Feedback/follow-up schemas, tool schemas, and system prompt
                   #   builder including conditional submission policy.

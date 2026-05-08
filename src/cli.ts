@@ -21,54 +21,53 @@ import {
   DEFAULT_PROVIDER,
   type PersonaConversation,
 } from "./agent.js";
-import type { SessionDevice } from "./browser.js";
 import { formatUsd } from "./cost.js";
+import {
+  ensureUserDefaultsFile,
+  loadUserDefaults,
+  USER_DEFAULTS_PATH,
+  type UserDefaults,
+} from "./defaults.js";
 import {
   describeSubmitData,
   isSubmitDataYamlPath,
   loadSubmitData,
   type SubmitData,
 } from "./submit-data.js";
-import type { Provider } from "./llm/types.js";
 
-interface Args {
+interface Args extends UserDefaults {
   command: "review" | "list-personas" | "help";
   url?: string;
-  json: boolean;
-  personaId: string;
-  provider: Provider;
-  model?: string;
-  maxOutputTokens: number;
-  maxActions: number;
-  costCapUsd: number;
-  fullPage: boolean;
-  device?: SessionDevice;
-  repl: boolean;
-  replOnly: boolean;
-  allowSubmit: boolean;
-  allowDownloads: boolean;
-  submitDataPath?: string;
-  yes: boolean;
 }
 
-function parseArgs(argv: string[]): Args {
+interface ParsedArgs {
+  command: Args["command"];
+  url?: string;
+  overrides: Partial<UserDefaults>;
+}
+
+const SOFTWARE_DEFAULTS: UserDefaults = {
+  json: false,
+  personaId: DEFAULT_PERSONA_ID,
+  provider: DEFAULT_PROVIDER,
+  model: undefined,
+  maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+  maxActions: DEFAULT_MAX_ACTIONS,
+  costCapUsd: DEFAULT_COST_CAP_USD,
+  fullPage: false,
+  device: undefined,
+  repl: false,
+  replOnly: false,
+  allowSubmit: false,
+  allowDownloads: false,
+  submitDataPath: undefined,
+  yes: false,
+};
+
+function parseArgs(argv: string[]): ParsedArgs {
   const args = argv.slice(2);
   let url: string | undefined;
-  let json = false;
-  let personaId = DEFAULT_PERSONA_ID;
-  let provider: Provider = DEFAULT_PROVIDER;
-  let model: string | undefined;
-  let maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS;
-  let maxActions = DEFAULT_MAX_ACTIONS;
-  let costCapUsd = DEFAULT_COST_CAP_USD;
-  let fullPage = false;
-  let device: SessionDevice | undefined;
-  let repl = false;
-  let replOnly = false;
-  let allowSubmit = false;
-  let allowDownloads = false;
-  let submitDataPath: string | undefined;
-  let yes = false;
+  const overrides: Partial<UserDefaults> = {};
   let command: Args["command"] = "review";
 
   for (let i = 0; i < args.length; i++) {
@@ -78,53 +77,73 @@ function parseArgs(argv: string[]): Args {
     } else if (a === "--list-personas") {
       command = "list-personas";
     } else if (a === "--json") {
-      json = true;
+      overrides.json = true;
+    } else if (a === "--no-json") {
+      overrides.json = false;
     } else if (a === "--full-page-snapshot") {
-      fullPage = true;
+      overrides.fullPage = true;
+    } else if (a === "--no-full-page-snapshot") {
+      overrides.fullPage = false;
     } else if (a === "--repl") {
-      repl = true;
+      overrides.repl = true;
+    } else if (a === "--no-repl") {
+      overrides.repl = false;
     } else if (a === "--repl-only") {
-      replOnly = true;
+      overrides.replOnly = true;
+    } else if (a === "--no-repl-only") {
+      overrides.replOnly = false;
     } else if (a === "--allow-submit") {
-      allowSubmit = true;
+      overrides.allowSubmit = true;
+    } else if (a === "--no-allow-submit") {
+      overrides.allowSubmit = false;
     } else if (a === "--allow-downloads") {
-      allowDownloads = true;
+      overrides.allowDownloads = true;
+    } else if (a === "--no-allow-downloads") {
+      overrides.allowDownloads = false;
     } else if (a === "--submit-data") {
-      submitDataPath = args[++i];
-      if (!submitDataPath || submitDataPath.startsWith("-")) {
-        console.error("--submit-data requires a path.");
-        process.exit(1);
-      }
+      const submitDataPath = readOptionValue(args, ++i, "--submit-data");
       if (!isSubmitDataYamlPath(submitDataPath)) {
         console.error("--submit-data must point to a .yaml or .yml file.");
         process.exit(1);
       }
+      overrides.submitDataPath = submitDataPath;
     } else if (a === "--yes" || a === "-y") {
-      yes = true;
+      overrides.yes = true;
+    } else if (a === "--no-yes") {
+      overrides.yes = false;
     } else if (a === "--persona") {
-      personaId = args[++i];
+      overrides.personaId = readOptionValue(args, ++i, "--persona");
     } else if (a === "--provider") {
-      const p = args[++i];
+      const p = readOptionValue(args, ++i, "--provider");
       if (p !== "anthropic" && p !== "openai") {
         console.error(`--provider must be 'anthropic' or 'openai'.`);
         process.exit(1);
       }
-      provider = p;
+      overrides.provider = p;
     } else if (a === "--device") {
-      const d = args[++i];
+      const d = readOptionValue(args, ++i, "--device");
       if (d !== "mobile" && d !== "desktop") {
         console.error(`--device must be 'mobile' or 'desktop'.`);
         process.exit(1);
       }
-      device = d;
+      overrides.device = d;
     } else if (a === "--model") {
-      model = args[++i];
+      overrides.model = readOptionValue(args, ++i, "--model");
     } else if (a === "--max-tokens") {
-      maxOutputTokens = parseInt(args[++i], 10);
+      overrides.maxOutputTokens = parsePositiveInteger(
+        readOptionValue(args, ++i, "--max-tokens"),
+        "--max-tokens"
+      );
     } else if (a === "--max-actions") {
-      maxActions = parseInt(args[++i], 10);
+      overrides.maxActions = parsePositiveInteger(
+        readOptionValue(args, ++i, "--max-actions"),
+        "--max-actions"
+      );
     } else if (a === "--cost-cap-usd") {
-      costCapUsd = parseFloat(args[++i]);
+      overrides.costCapUsd = parsePositiveNumber(
+        readOptionValue(args, ++i, "--cost-cap-usd"),
+        "--cost-cap-usd"
+      );
     } else if (!a.startsWith("-")) {
       if (url) {
         console.error(`Unexpected positional argument: ${a}`);
@@ -140,25 +159,51 @@ function parseArgs(argv: string[]): Args {
   return {
     command,
     url,
-    json,
-    personaId,
-    provider,
-    model,
-    maxOutputTokens,
-    maxActions,
-    costCapUsd,
-    fullPage,
-    device,
-    repl,
-    replOnly,
-    allowSubmit,
-    allowDownloads,
-    submitDataPath,
-    yes,
+    overrides,
   };
 }
 
-function printHelp() {
+function resolveArgs(
+  parsed: ParsedArgs,
+  userDefaults: Partial<UserDefaults>
+): Args {
+  return {
+    command: parsed.command,
+    url: parsed.url,
+    ...SOFTWARE_DEFAULTS,
+    ...userDefaults,
+    ...parsed.overrides,
+  };
+}
+
+function readOptionValue(args: string[], index: number, flag: string): string {
+  const value = args[index];
+  if (!value || value.startsWith("-")) {
+    console.error(`${flag} requires a value.`);
+    process.exit(1);
+  }
+  return value;
+}
+
+function parsePositiveInteger(value: string, flag: string): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    console.error(`${flag} must be a positive integer.`);
+    process.exit(1);
+  }
+  return parsed;
+}
+
+function parsePositiveNumber(value: string, flag: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    console.error(`${flag} must be a positive number.`);
+    process.exit(1);
+  }
+  return parsed;
+}
+
+function printHelp(defaultsPath: string = USER_DEFAULTS_PATH) {
   const help = `persona-review — AI persona feedback for non-profit web pages
 
 Usage:
@@ -199,11 +244,18 @@ Options:
   --full-page-snapshot    Send a full-page screenshot each turn instead of
                           just the viewport (default: viewport only, so the
                           persona has to scroll to see what's below).
+  --no-<boolean-flag>     Disable a boolean option set in user defaults
+                          for this run, e.g. --no-json or --no-repl.
   -h, --help              Show this help.
 
 Environment:
   ANTHROPIC_API_KEY    Required for --provider anthropic.
   OPENAI_API_KEY       Required for --provider openai.
+
+User defaults:
+  On first run, persona-review creates ${defaultsPath}.
+  Options set there override the built-in defaults. Command-line options
+  override both.
 
 Without --allow-submit (default), form-submit buttons are blocked at the
 browser layer. With --allow-submit, the persona fills the form using the
@@ -221,20 +273,40 @@ evidence — use it to notice things, not to decide things.`;
 }
 
 async function main() {
-  const opts = parseArgs(process.argv);
+  let defaultsPath: string;
+  try {
+    defaultsPath = ensureUserDefaultsFile();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`Error creating user defaults file: ${msg}`);
+    process.exit(1);
+  }
 
-  if (opts.command === "help") {
-    printHelp();
+  const parsed = parseArgs(process.argv);
+
+  if (parsed.command === "help") {
+    printHelp(defaultsPath);
     return;
   }
 
-  if (opts.command === "list-personas") {
+  if (parsed.command === "list-personas") {
     await printPersonaList();
     return;
   }
 
+  let userDefaults: Partial<UserDefaults>;
+  try {
+    userDefaults = loadUserDefaults(defaultsPath);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`Error loading user defaults: ${msg}`);
+    process.exit(1);
+  }
+
+  const opts = resolveArgs(parsed, userDefaults);
+
   if (!opts.url) {
-    printHelp();
+    printHelp(defaultsPath);
     process.exit(1);
   }
 
