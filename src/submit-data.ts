@@ -78,8 +78,16 @@ const DEFAULT_SUBMIT_DATA_PATH = path.resolve(
   "submit-data.yaml"
 );
 
+export function isSubmitDataYamlPath(filePath: string): boolean {
+  const ext = path.extname(filePath).toLowerCase();
+  return ext === ".yaml" || ext === ".yml";
+}
+
 export function loadSubmitData(filePath?: string): SubmitData {
   const target = filePath ?? DEFAULT_SUBMIT_DATA_PATH;
+  if (!isSubmitDataYamlPath(target)) {
+    throw new Error("--submit-data must point to a .yaml or .yml file.");
+  }
   const raw = readFileSync(target, "utf-8");
   const parsed = parseYaml(raw);
   return SubmitDataSchema.parse(parsed ?? {});

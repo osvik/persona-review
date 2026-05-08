@@ -25,6 +25,7 @@ import type { SessionDevice } from "./browser.js";
 import { formatUsd } from "./cost.js";
 import {
   describeSubmitData,
+  isSubmitDataYamlPath,
   loadSubmitData,
   type SubmitData,
 } from "./submit-data.js";
@@ -90,6 +91,14 @@ function parseArgs(argv: string[]): Args {
       allowDownloads = true;
     } else if (a === "--submit-data") {
       submitDataPath = args[++i];
+      if (!submitDataPath || submitDataPath.startsWith("-")) {
+        console.error("--submit-data requires a path.");
+        process.exit(1);
+      }
+      if (!isSubmitDataYamlPath(submitDataPath)) {
+        console.error("--submit-data must point to a .yaml or .yml file.");
+        process.exit(1);
+      }
     } else if (a === "--yes" || a === "-y") {
       yes = true;
     } else if (a === "--persona") {
@@ -175,7 +184,8 @@ Options:
                           or error page. Requires interactive consent.
   --allow-downloads       Permit browser downloads. Default: downloads are
                           blocked by Playwright.
-  --submit-data <path>    Override the test identity used for form fills
+  --submit-data <path>    Override the test identity used for form fills.
+                          Must be a .yaml or .yml file
                           (default: ./submit-data.yaml).
   -y, --yes               Skip the --allow-submit consent prompt (for
                           automated runs).

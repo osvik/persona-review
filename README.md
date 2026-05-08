@@ -300,7 +300,8 @@ Continue and submit the form? [y/N]
 ```
 
 Customize the identity by duplicating `submit-data.yaml`, editing your
-copy, and passing it with `--submit-data /path/to/your.yaml`. Do not edit
+copy, and passing it with `--submit-data /path/to/your.yaml` or
+`--submit-data /path/to/your.yml`. Do not edit
 the bundled `submit-data.yaml` directly because software updates may
 overwrite it. All personas share the same identity so you don't end up with
 one CRM record per persona — search the CRM for `PersonaReview` and the test
@@ -363,7 +364,7 @@ npm run review -- --list-personas
                            overwritten by updates.
   --allow-downloads        Permit browser downloads. Default: downloads are
                            blocked by Playwright.
-  --submit-data <path>     Use your copied test identity file
+  --submit-data <path>     Use your copied .yaml/.yml test identity file
                            (default template: ./submit-data.yaml).
   -y, --yes                Skip the --allow-submit consent prompt.
   --model <id>             Provider-specific model id (defaults:
