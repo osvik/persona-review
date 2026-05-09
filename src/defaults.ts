@@ -203,8 +203,10 @@ function requireProvider(
   key: string,
   filePath: string
 ): Provider {
-  if (value !== "anthropic" && value !== "openai") {
-    throw new Error(`${key} in ${filePath} must be 'anthropic' or 'openai'.`);
+  if (value !== "anthropic" && value !== "openai" && value !== "google") {
+    throw new Error(
+      `${key} in ${filePath} must be 'anthropic', 'openai', or 'google'.`
+    );
   }
   return value;
 }

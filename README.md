@@ -104,6 +104,7 @@ Entry points planned:
 - **[Node.js](https://nodejs.org/en/download) 20 or newer**
 - An **Anthropic API key** — [console.anthropic.com](https://console.anthropic.com)
   — or an **OpenAI API key** for `--provider openai` [platform.openai.com](https://platform.openai.com/)
+  — or a **Google Gemini API key** for `--provider google` [aistudio.google.com](https://aistudio.google.com/)
 - About 200 MB of disk for Chromium (installed via Playwright)
 
 **Note:** If you prefer you can use it in a server trough ssh or using the **[free Google Cloud Shell](https://shell.cloud.google.com/?pli=1&show=terminal)**. I've tested it also using Cloud Shell. 
@@ -159,14 +160,22 @@ export OPENAI_API_KEY=sk-...
 npm run review -- https://example.org --provider openai
 ```
 
+To use **Google Gemini**, create a Gemini API key, set `GEMINI_API_KEY`, and pass `--provider google`:
+
+```bash
+export GEMINI_API_KEY=...
+npm run review -- https://example.org --provider google
+```
+
 Or put keys in a `.env` and source it before running. The CLI reads only the
 key for the selected provider; nothing else leaves your machine except the
 HTTP request to the selected LLM provider and the page-load request to the
 target URL.
 
 **Model:** Anthropic defaults to `claude-sonnet-4-6`; OpenAI defaults to
-`gpt-5.4`. Override either with `--model`, e.g. `--model claude-opus-4-7` or
-`--model gpt-5.5`.
+`gpt-5.4`; Google defaults to `gemini-3.1-pro-preview-customtools`. Override
+any provider with `--model`, e.g. `--model claude-opus-4-7`,
+`--model gpt-5.5`, or `--model gemini-3.1-pro-preview`.
 
 ---
 
@@ -402,7 +411,7 @@ npm run review -- <url> [options]
 npm run review -- --list-personas
 
   --persona <id>           Persona archetype id (default: curious-newcomer).
-  --provider <name>        LLM provider: 'anthropic' or 'openai'
+  --provider <name>        LLM provider: 'anthropic', 'openai', or 'google'
                            (default: anthropic).
   --device <m|d>           Override the persona's device: 'mobile' or 'desktop'.
   --list-personas          Print available personas and exit.
@@ -424,7 +433,8 @@ npm run review -- --list-personas
                            (default template: ./submit-data.yaml).
   -y, --yes                Skip the --allow-submit consent prompt.
   --model <id>             Provider-specific model id (defaults:
-                           Anthropic claude-sonnet-4-6, OpenAI gpt-5.4).
+                           Anthropic claude-sonnet-4-6, OpenAI gpt-5.4,
+                           Google gemini-3.1-pro-preview-customtools).
   --cost-cap-usd <n>       Hard cost cap in USD per (URL, persona) session
                            (default: 1.0). Includes review + all REPL turns.
   --max-actions <n>        Soft cap on browser actions per phase (default: 15).
@@ -626,6 +636,7 @@ src/
     types.ts      # Shared provider-neutral message, tool, usage, and client
                   #   interfaces.
     anthropic.ts  # Anthropic Messages adapter.
+    google.ts     # Google Gemini generateContent adapter.
     openai.ts     # OpenAI Responses API adapter.
 personas/
   *.yaml          # 10 archetype files; drop your own in here too

@@ -17,6 +17,7 @@ import {
   DEFAULT_MAX_ACTIONS,
   DEFAULT_MAX_OUTPUT_TOKENS,
   DEFAULT_COST_CAP_USD,
+  DEFAULT_GOOGLE_MODEL,
   DEFAULT_OPENAI_MODEL,
   DEFAULT_PROVIDER,
   type PersonaConversation,
@@ -115,8 +116,8 @@ function parseArgs(argv: string[]): ParsedArgs {
       overrides.personaId = readOptionValue(args, ++i, "--persona");
     } else if (a === "--provider") {
       const p = readOptionValue(args, ++i, "--provider");
-      if (p !== "anthropic" && p !== "openai") {
-        console.error(`--provider must be 'anthropic' or 'openai'.`);
+      if (p !== "anthropic" && p !== "openai" && p !== "google") {
+        console.error(`--provider must be 'anthropic', 'openai', or 'google'.`);
         process.exit(1);
       }
       overrides.provider = p;
@@ -212,7 +213,7 @@ Usage:
 
 Options:
   --persona <id>          Persona archetype id (default: ${DEFAULT_PERSONA_ID}).
-  --provider <name>       LLM provider: 'anthropic' or 'openai'
+  --provider <name>       LLM provider: 'anthropic', 'openai', or 'google'
                           (default: ${DEFAULT_PROVIDER}).
   --device <m|d>          Override the persona's device: 'mobile' (390x844)
                           or 'desktop' (1280x800). Default: per-persona.
@@ -236,7 +237,8 @@ Options:
                           automated runs).
   --model <id>            Provider-specific model id
                           (defaults: Anthropic ${DEFAULT_ANTHROPIC_MODEL},
-                          OpenAI ${DEFAULT_OPENAI_MODEL}).
+                          OpenAI ${DEFAULT_OPENAI_MODEL},
+                          Google ${DEFAULT_GOOGLE_MODEL}).
   --cost-cap-usd <n>      Hard cost cap in USD per (URL, persona) session
                           (default: ${DEFAULT_COST_CAP_USD}). Includes review + all REPL turns.
   --max-actions <n>       Soft cap on browser actions per phase (default: ${DEFAULT_MAX_ACTIONS}).
@@ -251,6 +253,7 @@ Options:
 Environment:
   ANTHROPIC_API_KEY    Required for --provider anthropic.
   OPENAI_API_KEY       Required for --provider openai.
+  GEMINI_API_KEY       Required for --provider google.
 
 User defaults:
   On first run, persona-review creates ${defaultsPath}.
@@ -311,7 +314,11 @@ async function main() {
   }
 
   const requiredKey =
-    opts.provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
+    opts.provider === "openai"
+      ? "OPENAI_API_KEY"
+      : opts.provider === "google"
+        ? "GEMINI_API_KEY"
+        : "ANTHROPIC_API_KEY";
   if (!process.env[requiredKey]) {
     console.error(
       `Error: ${requiredKey} environment variable is required for --provider ${opts.provider}.`

@@ -5,6 +5,11 @@ export interface ModelPricing {
   outputUsdPerMTok: number;
   cacheWriteUsdPerMTok: number;
   cacheReadUsdPerMTok: number;
+  promptTokenThreshold?: number;
+  inputUsdPerMTokAboveThreshold?: number;
+  outputUsdPerMTokAboveThreshold?: number;
+  cacheWriteUsdPerMTokAboveThreshold?: number;
+  cacheReadUsdPerMTokAboveThreshold?: number;
 }
 
 // Public list prices, USD per million tokens.
@@ -46,6 +51,28 @@ export const PRICING: Record<string, ModelPricing> = {
     cacheWriteUsdPerMTok: 0.2,
     cacheReadUsdPerMTok: 0.02,
   },
+  "google:gemini-3.1-pro-preview": {
+    inputUsdPerMTok: 2,
+    outputUsdPerMTok: 12,
+    cacheWriteUsdPerMTok: 2,
+    cacheReadUsdPerMTok: 0.2,
+    promptTokenThreshold: 200_000,
+    inputUsdPerMTokAboveThreshold: 4,
+    outputUsdPerMTokAboveThreshold: 18,
+    cacheWriteUsdPerMTokAboveThreshold: 4,
+    cacheReadUsdPerMTokAboveThreshold: 0.4,
+  },
+  "google:gemini-3.1-pro-preview-customtools": {
+    inputUsdPerMTok: 2,
+    outputUsdPerMTok: 12,
+    cacheWriteUsdPerMTok: 2,
+    cacheReadUsdPerMTok: 0.2,
+    promptTokenThreshold: 200_000,
+    inputUsdPerMTokAboveThreshold: 4,
+    outputUsdPerMTokAboveThreshold: 18,
+    cacheWriteUsdPerMTokAboveThreshold: 4,
+    cacheReadUsdPerMTokAboveThreshold: 0.4,
+  },
 };
 
 function pricingKey(provider: Provider, model: string): string {
@@ -71,11 +98,29 @@ export function costFor(
   cacheWriteTokens = 0
 ): number {
   const p = pricingFor(provider, model);
+  const thresholdApplies =
+    p.promptTokenThreshold !== undefined && inputTokens > p.promptTokenThreshold;
+  const inputRate =
+    thresholdApplies && p.inputUsdPerMTokAboveThreshold !== undefined
+      ? p.inputUsdPerMTokAboveThreshold
+      : p.inputUsdPerMTok;
+  const outputRate =
+    thresholdApplies && p.outputUsdPerMTokAboveThreshold !== undefined
+      ? p.outputUsdPerMTokAboveThreshold
+      : p.outputUsdPerMTok;
+  const cacheReadRate =
+    thresholdApplies && p.cacheReadUsdPerMTokAboveThreshold !== undefined
+      ? p.cacheReadUsdPerMTokAboveThreshold
+      : p.cacheReadUsdPerMTok;
+  const cacheWriteRate =
+    thresholdApplies && p.cacheWriteUsdPerMTokAboveThreshold !== undefined
+      ? p.cacheWriteUsdPerMTokAboveThreshold
+      : p.cacheWriteUsdPerMTok;
   return (
-    (inputTokens * p.inputUsdPerMTok +
-      outputTokens * p.outputUsdPerMTok +
-      cacheReadTokens * p.cacheReadUsdPerMTok +
-      cacheWriteTokens * p.cacheWriteUsdPerMTok) /
+    (inputTokens * inputRate +
+      outputTokens * outputRate +
+      cacheReadTokens * cacheReadRate +
+      cacheWriteTokens * cacheWriteRate) /
     1_000_000
   );
 }

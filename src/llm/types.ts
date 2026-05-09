@@ -1,4 +1,4 @@
-export type Provider = "anthropic" | "openai";
+export type Provider = "anthropic" | "openai" | "google";
 
 export interface ToolDefinition {
   name: string;

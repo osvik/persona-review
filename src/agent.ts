@@ -23,6 +23,7 @@ import {
   type SubmitData,
 } from "./submit-data.js";
 import { AnthropicClient } from "./llm/anthropic.js";
+import { GoogleGeminiClient } from "./llm/google.js";
 import { OpenAIResponsesClient } from "./llm/openai.js";
 import type {
   ContentBlock,
@@ -36,6 +37,7 @@ import type {
 
 export const DEFAULT_PROVIDER: Provider = "anthropic";
 export const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6";
+export const DEFAULT_GOOGLE_MODEL = "gemini-3.1-pro-preview-customtools";
 export const DEFAULT_OPENAI_MODEL = "gpt-5.4";
 export const DEFAULT_MODEL = DEFAULT_ANTHROPIC_MODEL;
 export const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
@@ -206,7 +208,11 @@ export async function openConversation(
   const provider = opts.provider ?? DEFAULT_PROVIDER;
   const model =
     opts.model ??
-    (provider === "openai" ? DEFAULT_OPENAI_MODEL : DEFAULT_ANTHROPIC_MODEL);
+    (provider === "openai"
+      ? DEFAULT_OPENAI_MODEL
+      : provider === "google"
+        ? DEFAULT_GOOGLE_MODEL
+        : DEFAULT_ANTHROPIC_MODEL);
   const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
   const maxActions = opts.maxActions ?? DEFAULT_MAX_ACTIONS;
   const costCapUsd = opts.costCapUsd ?? DEFAULT_COST_CAP_USD;
@@ -282,6 +288,7 @@ export async function closeConversation(
 
 function createModelClient(provider: Provider): ModelClient {
   if (provider === "openai") return new OpenAIResponsesClient();
+  if (provider === "google") return new GoogleGeminiClient();
   return new AnthropicClient();
 }
 
