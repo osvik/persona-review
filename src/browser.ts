@@ -67,6 +67,7 @@ export interface SessionOptions {
   timeoutMs?: number;
   allowSubmit?: boolean;
   allowDownloads?: boolean;
+  allowCrossPageNavigation?: boolean;
 }
 
 export class BrowserSession {
@@ -81,6 +82,11 @@ export class BrowserSession {
   private jpegQuality: number;
   private timeoutMs: number;
   private allowDownloads: boolean;
+  private allowCrossPageNavigation: boolean;
+  private reviewedUrl: string | null = null;
+  private reviewedDocumentUrl: string | null = null;
+  private allowSubmitNavigation = false;
+  private blockedNavigationUrl: string | null = null;
 
   constructor(opts: SessionOptions = {}) {
     this.profile = profileFor(opts.device ?? "desktop");
@@ -89,6 +95,7 @@ export class BrowserSession {
     this.timeoutMs = opts.timeoutMs ?? 30_000;
     this.allowSubmit = opts.allowSubmit ?? false;
     this.allowDownloads = opts.allowDownloads ?? false;
+    this.allowCrossPageNavigation = opts.allowCrossPageNavigation ?? false;
   }
 
   async open(url: string): Promise<{ loadMs: number }> {
@@ -103,6 +110,22 @@ export class BrowserSession {
       acceptDownloads: this.allowDownloads,
     });
     this.page = await this.context.newPage();
+    await this.context.route("**/*", async (route) => {
+      const req = route.request();
+      if (
+        !this.allowCrossPageNavigation &&
+        !this.allowSubmitNavigation &&
+        this.reviewedDocumentUrl &&
+        req.isNavigationRequest() &&
+        req.frame() === this.page?.mainFrame() &&
+        this.isBlockedCrossPageTarget(req.url())
+      ) {
+        this.blockedNavigationUrl = req.url();
+        await route.abort("blockedbyclient");
+        return;
+      }
+      await route.continue();
+    });
     this.page.on("console", (msg) => {
       if (msg.type() === "error") this.consoleErrors.push(msg.text());
     });
@@ -114,6 +137,8 @@ export class BrowserSession {
       if (s >= 400) this.failedRequests.push({ url: res.url(), status: s });
     });
     await this.page.goto(url, { waitUntil: "networkidle", timeout: this.timeoutMs });
+    this.reviewedUrl = this.page.url();
+    this.reviewedDocumentUrl = documentUrl(this.reviewedUrl);
     // Real users don't act in the same instant DOMContentLoaded fires — give
     // the page's DCL handlers a 1000-1500ms cushion to wire up before we
     // observe or interact, so the persona doesn't critique a half-booted UI.
@@ -210,6 +235,31 @@ export class BrowserSession {
             "Refused: this is a form-submit button. Form submission is not allowed in this run. Examine or fill the form fields instead.",
         };
       }
+      const linkBlockReason = await locator
+        .evaluate((el) => {
+          const link = el.closest("a[href], area[href]") as
+            | HTMLAnchorElement
+            | HTMLAreaElement
+            | null;
+          if (!link) return null;
+          const target = link.getAttribute("target");
+          return {
+            href: link.getAttribute("href") ?? "",
+            url: link.href,
+            target: target && target.trim() ? target.trim() : null,
+          };
+        })
+        .then((link) => (link ? this.crossPageLinkBlockReason(link) : null))
+        .catch(() => null);
+      if (linkBlockReason) {
+        return { ok: false, reason: linkBlockReason };
+      }
+
+      this.blockedNavigationUrl = null;
+      const beforeUrl = page.url();
+      if (isFormSubmit && this.allowSubmit) {
+        this.allowSubmitNavigation = true;
+      }
       await locator.click({ timeout: 5_000 });
       // After a real submit, give the resulting page longer to settle so we
       // observe the thank-you / error / redirect rather than an in-flight
@@ -225,9 +275,28 @@ export class BrowserSession {
         // without firing networkidle a second time.
         await page.waitForTimeout(750);
       }
+      this.allowSubmitNavigation = false;
+      if (this.blockedNavigationUrl) {
+        return {
+          ok: false,
+          reason: crossPageNavigationBlockedReason(this.blockedNavigationUrl),
+        };
+      }
+      if (!this.allowCrossPageNavigation && !isFormSubmit) {
+        const afterUrl = page.url();
+        if (afterUrl !== beforeUrl && this.isBlockedCrossPageTarget(afterUrl)) {
+          await this.returnToReviewedUrl();
+          return {
+            ok: false,
+            reason: crossPageNavigationBlockedReason(afterUrl),
+          };
+        }
+      }
       return { ok: true, submitted: isFormSubmit };
     } catch (e) {
       return { ok: false, reason: (e as Error).message };
+    } finally {
+      this.allowSubmitNavigation = false;
     }
   }
 
@@ -256,4 +325,67 @@ export class BrowserSession {
     if (!this.page) throw new Error("BrowserSession.open() not called yet.");
     return this.page;
   }
+
+  private crossPageLinkBlockReason(link: {
+    href: string;
+    url: string;
+    target: string | null;
+  }): string | null {
+    if (this.allowCrossPageNavigation) return null;
+    const trimmedHref = link.href.trim().toLowerCase();
+    if (trimmedHref.startsWith("javascript:")) return null;
+    if (link.target && link.target.toLowerCase() !== "_self") {
+      return crossPageNavigationBlockedReason(link.url);
+    }
+    if (this.isBlockedCrossPageTarget(link.url)) {
+      return crossPageNavigationBlockedReason(link.url);
+    }
+    return null;
+  }
+
+  private isBlockedCrossPageTarget(url: string): boolean {
+    if (!this.reviewedDocumentUrl) return false;
+    const targetDocumentUrl = documentUrl(url);
+    if (!targetDocumentUrl) return true;
+    return targetDocumentUrl !== this.reviewedDocumentUrl;
+  }
+
+  private async returnToReviewedUrl(): Promise<void> {
+    const page = this.requirePage();
+    if (!this.reviewedUrl) return;
+    try {
+      await page.goBack({ waitUntil: "networkidle", timeout: 5_000 });
+      if (!this.isBlockedCrossPageTarget(page.url())) return;
+    } catch {
+      // Fall through to reloading the original reviewed URL.
+    }
+    try {
+      await page.goto(this.reviewedUrl, {
+        waitUntil: "networkidle",
+        timeout: this.timeoutMs,
+      });
+    } catch {
+      // Leave the browser in its current state; the tool result reports the block.
+    }
+  }
+}
+
+function documentUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    parsed.hash = "";
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
+function crossPageNavigationBlockedReason(url: string): string {
+  return (
+    `Refused: this link leaves the reviewed URL (${url}). ` +
+    `Cross-page navigation is disabled for this run. Continue reviewing the current page; do not treat this browser-level refusal as page friction.`
+  );
 }

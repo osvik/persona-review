@@ -20,6 +20,7 @@ export interface UserDefaults {
   replOnly: boolean;
   allowSubmit: boolean;
   allowDownloads: boolean;
+  allowCrossPageNavigation: boolean;
   submitDataPath?: string;
   yes: boolean;
 }
@@ -67,6 +68,9 @@ const keyMap = {
   "allow-downloads": "allowDownloads",
   allow_downloads: "allowDownloads",
   allowDownloads: "allowDownloads",
+  "allow-cross-page-navigation": "allowCrossPageNavigation",
+  allow_cross_page_navigation: "allowCrossPageNavigation",
+  allowCrossPageNavigation: "allowCrossPageNavigation",
   "submit-data": "submitDataPath",
   submit_data: "submitDataPath",
   "submit-data-path": "submitDataPath",
@@ -152,6 +156,7 @@ function assignDefault(
     case "replOnly":
     case "allowSubmit":
     case "allowDownloads":
+    case "allowCrossPageNavigation":
     case "yes":
       defaults[target] = requireBoolean(value, key, filePath);
       return;

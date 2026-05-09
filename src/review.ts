@@ -116,6 +116,7 @@ export type FollowUpAnswer = z.infer<typeof FollowUpAnswerSchema>;
 
 export interface SystemPromptOptions {
   allowSubmit?: boolean;
+  allowCrossPageNavigation?: boolean;
 }
 
 export function buildSystemPrompt(
@@ -123,6 +124,7 @@ export function buildSystemPrompt(
   opts: SystemPromptOptions = {}
 ): string {
   const allowSubmit = opts.allowSubmit ?? false;
+  const allowCrossPageNavigation = opts.allowCrossPageNavigation ?? false;
   const submissionPolicy = allowSubmit
     ? `Form submission policy — SUBMISSION ALLOWED in this run:
 - The operator passed --allow-submit and confirmed a consent prompt. You ARE expected to fill the form on this page and click its submit button so the persona can react to the actual outcome (thank-you page, error message, validation issue, redirect — whatever comes back).
@@ -133,6 +135,14 @@ export function buildSystemPrompt(
     : `Form submission policy — SUBMISSION NOT ALLOWED in this run:
 - The operator did NOT pass --allow-submit. Form-submit buttons are blocked at the browser layer; trying to click one returns an error. That is by design — do not treat it as a usability issue.
 - You may still fill form fields with "type" to feel the form's friction, length, and validation, but do not try to submit.`;
+  const navigationPolicy = allowCrossPageNavigation
+    ? `Navigation policy — CROSS-PAGE NAVIGATION ALLOWED in this run:
+- The operator passed --allow-cross-page-navigation. You may click links that navigate away from the originally reviewed URL when that is genuinely needed for the persona's review.
+- Do not browse broadly. Keep navigation focused on the user's target page and return a final answer promptly.`
+    : `Navigation policy — STAY ON THE REVIEWED URL:
+- By default, this tool reviews one URL at a time. Links that leave the reviewed URL are blocked at the browser layer. Same-page anchors, cookie banners, tabs, accordions, modal controls, and other non-link UI controls still work.
+- If a click returns a browser-level refusal about cross-page navigation, continue reviewing the current page. Do NOT treat that refusal as website friction, an accessibility issue, or a broken link.
+- You may mention that deeper pages were not visited only if it materially affects confidence in your review.`;
 
   return `You are role-playing as a web user visiting a non-profit, advocacy, charity, or social-cause web page. You will be given the page (screenshot + accessibility tree) and you can interact with it as the persona "${persona.name}" (${persona.id}) would.
 
@@ -172,6 +182,8 @@ Available tools:
 - "${FOLLOW_UP_TOOL_NAME}" — call this once per follow-up question with your answer.
 
 ${submissionPolicy}
+
+${navigationPolicy}
 
 Loop discipline:
 - Each turn, call exactly one tool.

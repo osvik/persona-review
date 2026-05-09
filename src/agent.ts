@@ -58,6 +58,7 @@ export interface OpenConversationOptions {
   onStatus?: StatusCallback;
   allowSubmit?: boolean;
   allowDownloads?: boolean;
+  allowCrossPageNavigation?: boolean;
   submitData?: SubmitData;
 }
 
@@ -87,6 +88,7 @@ export interface PersonaConversation {
   submitData?: SubmitData;
   submitsTaken: number;
   maxSubmits: number;
+  allowCrossPageNavigation: boolean;
 }
 
 export function resolveDevice(
@@ -146,7 +148,7 @@ const SCROLL_TOOL = {
 const CLICK_TOOL = {
   name: "click",
   description:
-    "Click an element by its [ref=eN] from the latest ARIA snapshot. Will not submit forms.",
+    "Click an element by its [ref=eN] from the latest ARIA snapshot. Will not submit forms or leave the reviewed URL unless the session permits it.",
   inputSchema: {
     type: "object",
     properties: {
@@ -221,6 +223,7 @@ export async function openConversation(
   const device = resolveDevice(persona.device, opts.device);
   const costTracker = new CostTracker(costCapUsd, provider, model);
   const allowSubmit = opts.allowSubmit ?? false;
+  const allowCrossPageNavigation = opts.allowCrossPageNavigation ?? false;
   if (allowSubmit && !opts.submitData) {
     throw new Error(
       "openConversation: allowSubmit=true requires submitData. Load it with loadSubmitData() and pass it in."
@@ -231,6 +234,7 @@ export async function openConversation(
     fullPage: opts.fullPage ?? false,
     allowSubmit,
     allowDownloads: opts.allowDownloads ?? false,
+    allowCrossPageNavigation,
   });
   const profile = profileFor(device);
   const client = createModelClient(provider);
@@ -249,7 +253,10 @@ export async function openConversation(
     );
   }
 
-  const systemPrompt = buildSystemPrompt(persona, { allowSubmit });
+  const systemPrompt = buildSystemPrompt(persona, {
+    allowSubmit,
+    allowCrossPageNavigation,
+  });
 
   return {
     persona,
@@ -275,6 +282,7 @@ export async function openConversation(
     submitData: opts.submitData,
     submitsTaken: 0,
     maxSubmits: MAX_SUBMITS_PER_SESSION,
+    allowCrossPageNavigation,
   };
 }
 

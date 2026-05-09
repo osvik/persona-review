@@ -61,6 +61,7 @@ const SOFTWARE_DEFAULTS: UserDefaults = {
   replOnly: false,
   allowSubmit: false,
   allowDownloads: false,
+  allowCrossPageNavigation: false,
   submitDataPath: undefined,
   yes: false,
 };
@@ -101,6 +102,10 @@ function parseArgs(argv: string[]): ParsedArgs {
       overrides.allowDownloads = true;
     } else if (a === "--no-allow-downloads") {
       overrides.allowDownloads = false;
+    } else if (a === "--allow-cross-page-navigation") {
+      overrides.allowCrossPageNavigation = true;
+    } else if (a === "--no-allow-cross-page-navigation") {
+      overrides.allowCrossPageNavigation = false;
     } else if (a === "--submit-data") {
       const submitDataPath = readOptionValue(args, ++i, "--submit-data");
       if (!isSubmitDataYamlPath(submitDataPath)) {
@@ -230,6 +235,10 @@ Options:
                           or error page. Requires interactive consent.
   --allow-downloads       Permit browser downloads. Default: downloads are
                           blocked by Playwright.
+  --allow-cross-page-navigation
+                          Permit persona clicks to navigate away from the
+                          reviewed URL. Default: blocked; same-page anchors
+                          and non-link UI controls still work.
   --submit-data <path>    Override the test identity used for form fills.
                           Must be a .yaml or .yml file
                           (default: ./submit-data.yaml).
@@ -269,6 +278,10 @@ Without --allow-downloads (default), browser downloads are blocked. With
 --allow-downloads, Playwright stores downloads in temporary browser storage;
 this tool does not save them into the project and they are deleted when the
 browser context closes.
+
+Without --allow-cross-page-navigation (default), persona clicks that would
+leave the reviewed URL are blocked at the browser layer. Same-page anchors,
+accordions, tabs, cookie banners, and other non-link UI controls still work.
 
 Simulation != user research. Persona output is a plausible reaction, not
 evidence — use it to notice things, not to decide things.`;
@@ -370,6 +383,7 @@ async function main() {
     onStatus,
     allowSubmit: opts.allowSubmit,
     allowDownloads: opts.allowDownloads,
+    allowCrossPageNavigation: opts.allowCrossPageNavigation,
     submitData,
   });
 

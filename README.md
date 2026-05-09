@@ -226,6 +226,7 @@ max_actions: 20
 max_tokens: 4096
 full_page_snapshot: true
 allow_downloads: true
+allow_cross_page_navigation: false  # set true to let personas follow links to other pages
 submit_data: /Users/me/.persona-review/submit-data.local.yaml
 ```
 
@@ -244,13 +245,14 @@ npx persona-review https://example.org/ --persona time-pressed-mobile-reader --p
 For boolean defaults set to `true`, use the matching `--no-...` flag to
 turn them off for one run, for example `--no-json`, `--no-repl`,
 `--no-allow-submit`, `--no-allow-downloads`, `--no-full-page-snapshot`, or
-`--no-yes`.
+`--no-allow-cross-page-navigation`.
 
 Supported defaults keys are `persona`, `provider`, `model`, `device`,
 `json`, `repl`, `repl_only`, `allow_submit`, `allow_downloads`,
-`submit_data`, `yes`, `max_tokens`, `max_actions`, `cost_cap_usd`, and
-`full_page_snapshot`. The equivalent long flag names with hyphens, such as
-`max-tokens` and `allow-downloads`, are also accepted.
+`allow_cross_page_navigation`, `submit_data`, `yes`, `max_tokens`,
+`max_actions`, `cost_cap_usd`, and `full_page_snapshot`. The equivalent long
+flag names with hyphens, such as `max-tokens` and `allow-downloads`, are also
+accepted.
 
 ### Basic review with Anthropic model
 
@@ -429,6 +431,10 @@ npm run review -- --list-personas
                            overwritten by updates.
   --allow-downloads        Permit browser downloads. Default: downloads are
                            blocked by Playwright.
+  --allow-cross-page-navigation
+                           Permit persona clicks to navigate away from the
+                           reviewed URL. Default: blocked; same-page anchors
+                           and non-link UI controls still work.
   --submit-data <path>     Use your copied .yaml/.yml test identity file
                            (default template: ./submit-data.yaml).
   -y, --yes                Skip the --allow-submit consent prompt.
@@ -590,6 +596,11 @@ reviews agree on, and treat the overlap as the signal.
   Accepted downloads stay in Playwright's temporary browser storage; this
   tool does not save them into the project, and they are deleted when the
   browser context closes.
+- **Cross-page navigation is opt-in.** Default reviews stay on the URL being
+  reviewed. Links that would leave that URL are blocked at the browser layer,
+  while same-page anchors, cookie banners, tabs, accordions, and other
+  non-link controls still work. Pass `--allow-cross-page-navigation` when a
+  review should intentionally follow links to other pages.
 - **Local-only.** No servers we operate. Traffic goes only to the target URL
   and to the selected LLM provider API.
 - **Cost cap.** Every session enforces a hard USD cap (default $1, override
@@ -622,7 +633,8 @@ src/
   agent.ts        # PersonaConversation orchestration, review loop, REPL turns,
                   #   provider/model selection, action caps, and submit cap.
   browser.ts      # Playwright browser session: open, observe, scroll, click,
-                  #   type, close; blocks submits/downloads unless enabled.
+                  #   type, close; blocks submits, downloads, and cross-page
+                  #   navigation unless enabled.
   cli.ts          # CLI entry: flags, persona loading, provider key checks,
                   #   --allow-submit consent, JSON/prose output, REPL.
   cost.ts         # Per-provider/model pricing and CostTracker cap enforcement.
