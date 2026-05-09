@@ -1,10 +1,17 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import os from "node:os";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import type { SessionDevice } from "./browser.js";
 import { isSubmitDataYamlPath } from "./submit-data.js";
 import type { Provider } from "./llm/types.js";
+import {
+  ensureUserConfigDirs,
+  USER_DEFAULTS_PATH,
+  USER_PERSONAS_DIR,
+  USER_CONFIG_DIR,
+} from "./user-config.js";
+
+export { USER_CONFIG_DIR, USER_DEFAULTS_PATH, USER_PERSONAS_DIR };
 
 export interface UserDefaults {
   personaId: string;
@@ -24,12 +31,6 @@ export interface UserDefaults {
   submitDataPath?: string;
   yes: boolean;
 }
-
-export const USER_DEFAULTS_PATH = path.join(
-  os.homedir(),
-  ".persona-review",
-  "defaults.yaml"
-);
 
 const keyMap = {
   persona: "personaId",
@@ -85,7 +86,7 @@ const supportedKeys = Object.keys(keyMap).sort();
 export function ensureUserDefaultsFile(
   filePath: string = USER_DEFAULTS_PATH
 ): string {
-  mkdirSync(path.dirname(filePath), { recursive: true });
+  ensureUserConfigDirs(path.dirname(filePath));
   if (!existsSync(filePath)) {
     writeFileSync(filePath, "");
   }

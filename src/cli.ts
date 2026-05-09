@@ -27,6 +27,7 @@ import {
   ensureUserDefaultsFile,
   loadUserDefaults,
   USER_DEFAULTS_PATH,
+  USER_PERSONAS_DIR,
   type UserDefaults,
 } from "./defaults.js";
 import {
@@ -266,6 +267,7 @@ Environment:
 
 User defaults:
   On first run, persona-review creates ${defaultsPath}.
+  Custom personas can be added as YAML files in ${USER_PERSONAS_DIR}.
   Options set there override the built-in defaults. Command-line options
   override both.
 

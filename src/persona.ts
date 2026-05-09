@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
+import { USER_PERSONAS_DIR } from "./user-config.js";
 
 export const PersonaSchema = z.object({
   id: z.string().min(1),
@@ -24,7 +25,11 @@ export const PersonaSchema = z.object({
 export type Persona = z.infer<typeof PersonaSchema>;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PERSONA_DIR = path.resolve(__dirname, "..", "personas");
+export const BUILTIN_PERSONAS_DIR = path.resolve(__dirname, "..", "personas");
+export const DEFAULT_PERSONA_DIRS = [
+  BUILTIN_PERSONAS_DIR,
+  USER_PERSONAS_DIR,
+] as const;
 
 export const DEFAULT_PERSONA_ID = "curious-newcomer";
 
@@ -34,22 +39,23 @@ export function loadPersonaFromFile(filePath: string): Persona {
   return PersonaSchema.parse(parsed);
 }
 
-export async function listPersonas(dir: string = PERSONA_DIR): Promise<Persona[]> {
-  const entries = await readdir(dir);
-  const yamlFiles = entries
-    .filter((f) => f.endsWith(".yaml") || f.endsWith(".yml"))
-    .sort();
-  const personas = yamlFiles.map((f) =>
-    loadPersonaFromFile(path.join(dir, f))
-  );
-  return personas;
+export async function listPersonas(
+  dirs: string | readonly string[] = DEFAULT_PERSONA_DIRS
+): Promise<Persona[]> {
+  const personasById = new Map<string, Persona>();
+  for (const dir of normalizePersonaDirs(dirs)) {
+    for (const persona of await listPersonasInDir(dir)) {
+      personasById.set(persona.id, persona);
+    }
+  }
+  return [...personasById.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function loadPersonaById(
   id: string,
-  dir: string = PERSONA_DIR
+  dirs: string | readonly string[] = DEFAULT_PERSONA_DIRS
 ): Promise<Persona> {
-  const all = await listPersonas(dir);
+  const all = await listPersonas(dirs);
   const found = all.find((p) => p.id === id);
   if (!found) {
     const ids = all.map((p) => p.id).join(", ");
@@ -58,4 +64,29 @@ export async function loadPersonaById(
     );
   }
   return found;
+}
+
+function normalizePersonaDirs(dirs: string | readonly string[]): readonly string[] {
+  return typeof dirs === "string" ? [dirs] : dirs;
+}
+
+async function listPersonasInDir(dir: string): Promise<Persona[]> {
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch (e) {
+    if (isNodeError(e) && e.code === "ENOENT") {
+      return [];
+    }
+    throw e;
+  }
+
+  const yamlFiles = entries
+    .filter((f) => f.endsWith(".yaml") || f.endsWith(".yml"))
+    .sort();
+  return yamlFiles.map((f) => loadPersonaFromFile(path.join(dir, f)));
+}
+
+function isNodeError(e: unknown): e is NodeJS.ErrnoException {
+  return e instanceof Error && "code" in e;
 }

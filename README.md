@@ -64,8 +64,8 @@ Reactions are written in the page's own language, as a native speaker.
    bundled `submit-data.yaml` directly may be overwritten when the software
    is updated.
 
-It does not: authenticate. Custom personas come from YAML files
-in `personas/` — drop your own in there.
+It does not: authenticate. Custom personas come from YAML files in your
+personal `.persona-review/personas/` directory.
 
 **Scope:** every persona assumes some interest in the cause. This tool is
 not designed for commercial / SaaS pages — for that, the personas would need
@@ -199,10 +199,13 @@ npx persona-review --help
 
 ### User defaults
 
-On first run, persona-review creates an empty defaults file:
+On first run, persona-review creates an empty defaults file and an empty
+personal personas directory:
 
 - macOS / Linux: `$HOME/.persona-review/defaults.yaml`
+- macOS / Linux: `$HOME/.persona-review/personas/`
 - Windows: `%USERPROFILE%\.persona-review\defaults.yaml`
+- Windows: `%USERPROFILE%\.persona-review\personas\`
 
 Leave it empty to use the built-in defaults. Add YAML keys there to change
 your normal defaults without editing source code or rebuilding, which is
@@ -512,8 +515,10 @@ seeded. See "Reproducibility" below.)
 
 ## Persona file format
 
-Personas live as YAML files in `personas/`. Each file is validated against
-the Zod schema in `src/persona.ts`. Example:
+Built-in personas live as YAML files in this package's `personas/` directory.
+Custom user personas live in `$HOME/.persona-review/personas/` on macOS/Linux
+or `%USERPROFILE%\.persona-review\personas\` on Windows. Each file is
+validated against the Zod schema in `src/persona.ts`. Example:
 
 ```yaml
 id: curious-newcomer           # unique slug
@@ -544,8 +549,11 @@ Notes:
 - We describe **UX-relevant traits** (goals, frustrations, tech confidence,
   device, accessibility needs) and avoid demographic caricature.
 
-You can drop your own custom YAML files into the same `personas/` folder
-and they'll be picked up by `--list-personas`. If you edit the existing files they may be overwritten when you update the software.
+You can drop your own custom YAML files into your personal personas directory
+and they'll be picked up by `--list-personas` and `--persona <id>`. If a custom
+persona uses the same `id` as a built-in persona, the custom persona wins. If
+you edit the package's built-in files, they may be overwritten when you update
+the software.
 
 ---
 
@@ -644,6 +652,7 @@ src/
                   #   builder including conditional submission policy.
   submit-data.ts  # Test-identity Zod schema + loader; resolves first_name to
                   #   the persona's name when YAML leaves it null.
+  user-config.ts  # Cross-platform paths for ~/.persona-review resources.
   llm/
     types.ts      # Shared provider-neutral message, tool, usage, and client
                   #   interfaces.
