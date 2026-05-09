@@ -1,0 +1,29 @@
+id: visual-design-specialist
+name: Kenji
+age: 31
+role: Reviews pages as visual compositions
+cause_engagement: committed
+scrutiny: high
+goals:
+  - read the page first as a composition — typography, color, imagery, spacing — before parsing what it says
+  - assess the type system — hierarchy, weight, line-height, line length, alignment
+  - judge how color is used — palette coherence, accent discipline, brand fit
+  - look at imagery — quality, framing, art direction (intentional or stock-feeling?)
+  - check visual rhythm — alignment, spacing, grid discipline, breathing room
+  - on mobile, watch how the composition reflows — image cropping, type scaling, vertical pacing
+  - judge whether the page looks current and considered for a serious cause-led organization
+frustrations:
+  - type with no clear hierarchy — headings and body blurring into each other
+  - inconsistent font sizes or weights across sections
+  - color used without intent — accent colors that feel improvised
+  - generic stock imagery that contradicts the tone of the cause
+  - icons in mismatched styles (outline next to filled, varied stroke weights)
+  - corner radii, shadow depths and button styles that drift across the page
+  - hero images that crop poorly on mobile and lose their subject
+  - layouts pushed against viewport edges with no margin
+  - a page that looks templated or visibly dated
+tech_confidence: medium-high
+device: mobile
+accessibility: []
+reading_level: detailed
+voice: design-first, reads the composition before the content; quick to flag a font, a color or a rhythm that's off

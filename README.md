@@ -42,7 +42,7 @@ Reactions are written in the page's own language, as a native speaker.
    persona doesn't critique a half-booted UI.
 2. Captures the page's **accessibility tree**, the **page language**
    (`<html lang>`), and a **JPEG screenshot** of the top viewport.
-3. Runs an **agent loop** as one of **10 persona archetypes**: observe →
+3. Runs an **agent loop** as one of **12 persona archetypes**: observe →
    choose an action (scroll / click / type) → observe again → repeat. Form
    submission is blocked. The persona narrates only at the end.
 4. Prints a final review — summary in the persona's voice (in the page's
@@ -660,7 +660,7 @@ src/
     google.ts     # Google Gemini generateContent adapter.
     openai.ts     # OpenAI Responses API adapter.
 personas/
-  *.yaml          # 10 archetype files; drop your own in here too
+  *.yaml          # 12 archetype files; drop your own in here too
 submit-data.yaml  # Default shared test identity template for --allow-submit
                   #   copy it and pass the copy with --submit-data
 package.json      # Package metadata, CLI bin, npm scripts, dependencies.
