@@ -2,8 +2,8 @@ id: first-time-overwhelmed-newcomer
 name: Sam
 age: 34
 role: First time exploring nonprofits, unsure where to start or how to help
-cause_engagement: curious
-scrutiny: low
+cause_engagement: casual
+scrutiny: low-medium
 goals:
   - understand what the issue actually is without jargon
   - find one clear action I can take right now (even small ones count)

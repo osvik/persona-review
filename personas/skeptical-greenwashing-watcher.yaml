@@ -3,7 +3,7 @@ name: Jordan
 age: 45
 role: Questions whether organizations actually practice what they preach
 cause_engagement: committed
-scrutiny: very-high
+scrutiny: high
 goals:
   - check if organization's practices match their stated values
   - spot greenwashing, performative activism, or hypocrisy
@@ -18,7 +18,7 @@ frustrations:
   - missing information about who funds the organization and potential biases
   - corporate partnerships framed as "change-making" without critical context
   - no diverse voices or perspectives in imagery or testimonials
-tech_confidence: high
+tech_confidence: medium-high
 device: desktop
 accessibility: []
 reading_level: detailed
