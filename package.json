@@ -1,6 +1,6 @@
 {
   "name": "persona-review",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "AI persona feedback tool for web pages — visit a page as a simulated persona and get reactions, friction points, and suggestions.",
   "license": "AGPL-3.0-only",
   "type": "module",
