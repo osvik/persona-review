@@ -9,9 +9,10 @@ Reactions are written in the page's own language, as a native speaker.
   - [What it does today](#what-it-does-today)
   - [Architecture](#architecture)
   - [Prerequisites](#prerequisites)
-  - [Install via npm (npx)](#install-via-npm-npx)
-  - [Install (development)](#install-development)
-  - [Install using Docker](#install-using-docker)
+  - [Install](#install)
+    - [1. Install via npm (use with npx)](#1-install-via-npm-use-with-npx)
+    - [2. Install the development version](#2-install-the-development-version)
+    - [3. Install using Docker](#3-install-using-docker)
   - [Configure the LLM provider](#configure-the-llm-provider)
   - [Usage](#usage)
     - [Help](#help)
@@ -101,24 +102,37 @@ Entry points planned:
 
 ## Prerequisites
 
-- **[Git](https://git-scm.com/install/)** - Version control.
 - **[Node.js](https://nodejs.org/en/download) 20 or newer**
 - An **Anthropic API key** — [console.anthropic.com](https://console.anthropic.com)
   — or an **OpenAI API key** for `--provider openai` [platform.openai.com](https://platform.openai.com/)
   — or a **Google Gemini API key** for `--provider google` [aistudio.google.com](https://aistudio.google.com/)
 - About 200 MB of disk for Chromium (installed via Playwright)
 
-**Note:** If you prefer you can use it in a server trough ssh or using the **[free Google Cloud Shell](https://shell.cloud.google.com/?pli=1&show=terminal)**. I've tested it also using Cloud Shell. 
-
 ---
 
-## Install via npm (npx)
+## Install
 
-No git clone needed. Install Chromium once, then run directly with `npx`:
+Choose ONE of the methods bellow. If you prefer you can use the **[free Google Cloud Shell](https://shell.cloud.google.com/?pli=1&show=terminal)** instead of installing to your computer.
+
+### 1. Install via npm (use with npx)
+
+You just need to have installed [Nodejs version 20 or more](https://nodejs.org/en/download).
+
+To install:
 
 ```bash
+npx persona-review
+
 npx playwright install chromium
-export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+To use:
+
+```bash
+# Use the export command to add your API key. See bellow for more info. 
+
+export ANTHROPIC_API_KEY=sk-ant...
+
 npx persona-review https://example.org/
 ```
 
@@ -128,7 +142,7 @@ options described in [Usage](#usage) work the same way — replace
 
 ---
 
-## Install (development)
+### 2. Install the development version
 
 Use this if you want to modify the source or contribute:
 
@@ -146,9 +160,11 @@ to `dist/` and marks the CLI executable.
 
 ---
 
-## Install using Docker
+### 3. Install using Docker
 
-If you can't use another method, you can use this software inside a Docker container. This method takes much longer to install, as you have to download the Docker image, but it's reliable.
+If you can't use another method, you can use this software inside a Docker container. You need to install [Docker](https://www.docker.com/get-started/) first!
+
+This method takes much longer to install, as you have to download the Docker image, but it's reliable.
 
 Create the container from the terminal (just once):
 
@@ -156,7 +172,7 @@ Create the container from the terminal (just once):
 docker run -it --init --ipc=host --name persona-review node:20-bookworm /bin/bash
 ```
 
-Install (just once):
+**Install inside your container (just once):**
 
 ```bash
 mkdir /app
@@ -173,6 +189,8 @@ export ANTHROPIC_API_KEY=sk-ant...
 npx persona-review https://example.org
 ```
 
+**Use:**
+
 Now you can use it by opening Docker desktop's terminal in the conainer `persona-review`:
 
 ```bash
@@ -185,20 +203,20 @@ npx persona-review http://example.org
 
 ## Configure the LLM provider
 
-The CLI calls Anthropic's API directly. **[Set your key](https://platform.claude.com/dashboard)** in the environment:
+By default the CLI calls Anthropic's API directly. [Create your API key](https://platform.claude.com/settings/workspaces/default/keys) and add it to the console with:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-To use **OpenAI** instead, [create your key](https://platform.openai.com/api-keys) set `OPENAI_API_KEY` and pass `--provider openai`:
+To use **OpenAI** instead, [create your API key](https://platform.openai.com/api-keys) set `OPENAI_API_KEY` and pass `--provider openai`:
 
 ```bash
 export OPENAI_API_KEY=sk-...
 npm run review -- https://example.org --provider openai
 ```
 
-To use **Google Gemini**, create a Gemini API key, set `GEMINI_API_KEY`, and pass `--provider google`:
+To use **Google Gemini** instead, [create your API key](https://aistudio.google.com/api-keys), set `GEMINI_API_KEY`, and pass `--provider google`:
 
 ```bash
 export GEMINI_API_KEY=...
@@ -219,7 +237,7 @@ any provider with `--model`, e.g. `--model claude-opus-4-7`,
 
 ## Usage
 
-All examples below use the development `npm run review --` form. If you
+**Important:** All examples below use the development `npm run review --` form. If you
 installed via npm, replace that prefix with `npx persona-review`:
 
 ```bash
