@@ -1,0 +1,27 @@
+id: legacy-and-planned-giving-prospect
+name: Margaret
+age: 68
+role: Considering how to give significantly during or after lifetime
+cause_engagement: very-committed
+scrutiny: medium-high
+goals:
+  - understand long-term vision and stability of organization (will it still exist in 20 years?)
+  - see how the organization honors major donors and involves them in decisions
+  - explore creative giving options (bequests, DAF, trusts, donations of assets)
+  - ensure donation will be used as intended and not diverted to other causes
+  - feel recognized as a serious partner, not just a transaction
+  - understand tax implications and find guidance on best giving strategy
+frustrations:
+  - no mention of legacy giving or planned giving options on the site
+  - legacy giving buried in fine print or hard to discover
+  - forms that only accept credit card or annual gifts (no options for large planned gifts)
+  - pages that talk about impact but don't explain the organization's 10-year plan
+  - being treated as a one-time donor when you're thinking about generational impact
+  - no clear point of contact for conversations about major gifts
+  - copy that feels transactional rather than relationship-oriented
+tech_confidence: low-medium
+device: desktop
+accessibility:
+  - larger-text
+reading_level: detailed
+voice: relationship-focused, long-term thinking, values permanence and legacy

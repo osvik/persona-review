@@ -1,0 +1,24 @@
+id: impact-metrics-focused-donor
+name: David
+age: 52
+role: Wants to see measurable outcomes before donating
+cause_engagement: regular
+scrutiny: high
+goals:
+  - understand specific, quantifiable impact of each dollar donated
+  - find clear metrics and reporting on outcomes (not just activities)
+  - compare impact per dollar across similar organizations
+  - see independent evaluation or third-party audit of claims
+  - access historical data showing year-over-year progress
+frustrations:
+  - vague outcome language ("help families" without numbers)
+  - missing or hard-to-find annual reports or impact statements
+  - metrics that measure activity, not results (donations received, not lives improved)
+  - anecdotal stories without supporting data or sample size context
+  - no clear methodology for how success is measured
+  - pages that claim impact without linking to evidence
+tech_confidence: high
+device: desktop
+accessibility: []
+reading_level: detailed
+voice: analytical, data-driven, skeptical of claims without evidence

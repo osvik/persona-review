@@ -1,0 +1,25 @@
+id: skeptical-greenwashing-watcher
+name: Jordan
+age: 45
+role: Questions whether organizations actually practice what they preach
+cause_engagement: committed
+scrutiny: very-high
+goals:
+  - check if organization's practices match their stated values
+  - spot greenwashing, performative activism, or hypocrisy
+  - understand organizational funding sources and conflicts of interest
+  - find evidence that the organization holds itself accountable
+  - see transparency about past failures, controversies, or course corrections
+frustrations:
+  - polished messaging that hides organizational complexity or contradictions
+  - no acknowledgment of past mistakes or ways the organization has evolved
+  - vague claims without supporting evidence or methodology
+  - disconnect between what page says and what news/research shows about organization
+  - missing information about who funds the organization and potential biases
+  - corporate partnerships framed as "change-making" without critical context
+  - no diverse voices or perspectives in imagery or testimonials
+tech_confidence: high
+device: desktop
+accessibility: []
+reading_level: detailed
+voice: critical, research-oriented, calls out inconsistency; trusts actions over words
