@@ -11,6 +11,7 @@ Reactions are written in the page's own language, as a native speaker.
   - [Prerequisites](#prerequisites)
   - [Install via npm (npx)](#install-via-npm-npx)
   - [Install (development)](#install-development)
+  - [Install using Docker](#install-using-docker)
   - [Configure the LLM provider](#configure-the-llm-provider)
   - [Usage](#usage)
     - [Help](#help)
@@ -142,6 +143,43 @@ npm run build
 `npm install` pulls the dependencies; `npx playwright install chromium`
 downloads the browser Playwright drives; `npm run build` compiles TypeScript
 to `dist/` and marks the CLI executable.
+
+---
+
+## Install using Docker
+
+If you can't use another method, you can use this software inside a Docker container. This method takes much longer to install, as you have to download the Docker image, but it's reliable.
+
+Create the container from the terminal (just once):
+
+```bash
+docker run -it --init --ipc=host --name persona-review node:20-bookworm /bin/bash
+```
+
+Install (just once):
+
+```bash
+mkdir /app
+cd /app
+npm init -y
+npm install persona-review
+npx playwright install --with-deps chromium
+```
+
+Test it with your API key:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant...
+npx persona-review https://example.org
+```
+
+Now you can use it by opening Docker desktop's terminal in the conainer `persona-review`:
+
+```bash
+bash
+export ANTHROPIC_API_KEY=sk-ant...
+npx persona-review http://example.org
+```
 
 ---
 
