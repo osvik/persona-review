@@ -214,6 +214,9 @@ function printHelp(defaultsPath: string = USER_DEFAULTS_PATH) {
   const help = `persona-review — AI persona feedback for non-profit web pages
 
 Usage:
+  npx persona-review <url> [options]
+  npx persona-review --list-personas
+  or
   npm run review -- <url> [options]
   npm run review -- --list-personas
 
@@ -231,15 +234,15 @@ Options:
                           The cost cap is shared across review + REPL.
   --repl-only             Skip the initial review; load the page and enter
                           the interactive prompt directly.
-  --allow-submit          Permit ONE form submission this session and ask
-                          the persona to react to the resulting thank-you
-                          or error page. Requires interactive consent.
   --allow-downloads       Permit browser downloads. Default: downloads are
                           blocked by Playwright.
   --allow-cross-page-navigation
                           Permit persona clicks to navigate away from the
                           reviewed URL. Default: blocked; same-page anchors
                           and non-link UI controls still work.
+  --allow-submit          Permit ONE form submission this session and ask
+                          the persona to react to the resulting thank-you
+                          or error page. Requires interactive consent.
   --submit-data <path>    Override the test identity used for form fills.
                           Must be a .yaml or .yml file
                           (default: ./submit-data.yaml).
