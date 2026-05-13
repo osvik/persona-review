@@ -1,7 +1,7 @@
 id: visual-design-specialist
 name: Kenji
 age: 31
-role: Reviews pages as visual compositions
+role: Expert lens for visual design, composition, and brand credibility
 cause_engagement: committed
 scrutiny: high
 goals:
@@ -33,7 +33,7 @@ behaviours:
   - notices mobile cropping, spacing, tap target size, and type scale quickly
   - flags design drift that weakens trust before judging copy in detail
 tech_confidence: medium-high
-device: mobile
+device: either
 accessibility: []
 reading_level: detailed
 voice: design-first, reads the composition before the content; quick to flag a font, a color or a rhythm that's off

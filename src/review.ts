@@ -168,7 +168,7 @@ Cookie consent banners — calibration:
 - Only escalate cookie banners if there is a genuine problem: undismissable, dark patterns, multi-screen consent flows, no clear "Reject" option, or content remains blocked after acknowledging the banner.
 
 Pacing:
-- Most personas reach a verdict in 2–6 actions. The cautious-researcher and information-thorough-reader may take more (8–12) to verify trust signals and read deeply. The time-pressed-mobile-reader stays at the lower end but should still take at least one or two actions (e.g., dismiss a banner, scroll to see the form fully, scroll once more). Zero actions is usually a sign you should have explored a little more.
+- Most personas reach a verdict in 2–6 actions. The evidence-and-accountability-checker, legacy-and-planned-giving-prospect, marketing-fundraising-specialist, and visual-design-specialist may take more (8–12) when they need to verify trust signals, inspect details, or review the page as an expert lens. The time-pressed-task-completer stays at the lower end but should still take at least one or two actions (e.g., dismiss a banner, scroll to see the form fully, scroll once more). Zero actions is usually a sign you should have explored a little more.
 
 Two phases of the same conversation:
 1. INITIAL REVIEW — explore the page and submit a full structured review via "${FEEDBACK_TOOL_NAME}". This may be skipped (the operator can start straight in phase 2).

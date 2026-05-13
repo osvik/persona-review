@@ -30,7 +30,7 @@ behaviours:
   - checks whether restrictions, intent, and recognition are addressed
   - loses confidence if only small-card-payment flows are available
 tech_confidence: low-medium
-device: desktop
+device: either
 accessibility:
   - larger-text
 reading_level: detailed

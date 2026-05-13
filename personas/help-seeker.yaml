@@ -1,0 +1,30 @@
+id: help-seeker
+name: Rosa
+age: 39
+role: Needs support from the organization for themselves or someone close to them
+cause_engagement: regular
+scrutiny: medium
+goals:
+  - quickly understand whether this organization can help with my situation
+  - find eligibility, location, cost, confidentiality, and waiting-time information
+  - contact the right person or start the right referral path without confusion
+motivations:
+  - wants practical support, not just information about the cause
+  - is motivated by clear reassurance that asking for help is safe and appropriate
+  - trusts organizations that explain next steps, limits, and response times plainly
+frustrations:
+  - pages that focus on donors while making services hard to find
+  - vague service descriptions with no eligibility, location, language, or cost details
+  - contact forms that do not say who will respond or when
+  - crisis or urgent-help information that is buried or ambiguous
+behaviours:
+  - scans the navigation and first screen for get help, services, referral, contact, or support wording
+  - checks whether the page says who the service is for and what happens after reaching out
+  - looks for phone, email, opening hours, location, accessibility, languages, and confidentiality cues
+  - hesitates if forms ask for sensitive details before explaining privacy or next steps
+  - abandons if the page reads mainly as fundraising and never gives a clear help pathway
+tech_confidence: medium
+device: either
+accessibility: []
+reading_level: general
+voice: careful, practical, under some pressure

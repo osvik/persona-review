@@ -22,7 +22,7 @@ behaviours:
   - looks for a plain explanation of what the action means before committing
   - gives up when legalistic or insider language controls the main ask
 tech_confidence: medium
-device: mobile
+device: either
 accessibility: []
 reading_level: general
 voice: thoughtful, plain-spoken, sometimes hesitant

@@ -285,7 +285,7 @@ Precedence is:
 Example:
 
 ```yaml
-persona: cautious-researcher
+persona: evidence-and-accountability-checker
 provider: openai
 model: gpt-5.4
 device: desktop
@@ -307,7 +307,7 @@ npx persona-review https://example.org/
 Command-line options still win for that run:
 
 ```bash
-npx persona-review https://example.org/ --persona time-pressed-mobile-reader --provider anthropic
+npx persona-review https://example.org/ --persona time-pressed-task-completer --provider anthropic
 ```
 
 For boolean defaults set to `true`, use the matching `--no-...` flag to
@@ -334,13 +334,13 @@ npm run review -- https://example.org/
 npm run review -- --list-personas
 ```
 
-Uses the default persona (`curious-newcomer`).
+Uses the default persona (`newcomer-orientation-seeker`).
 
 ### Pick a persona
 
 ```bash
-npm run review -- https://example.org --persona cautious-researcher
-npm run review -- https://example.org --persona time-pressed-mobile-reader
+npm run review -- https://example.org --persona evidence-and-accountability-checker
+npm run review -- https://example.org --persona time-pressed-task-completer
 ```
 
 ### Different language
@@ -361,7 +361,7 @@ npm run review -- https://example.org --json > review.json
 After the review, ask the same persona questions about the same page:
 
 ```bash
-npm run review -- https://example.org --persona cautious-researcher --repl
+npm run review -- https://example.org --persona evidence-and-accountability-checker --repl
 ```
 
 ```
@@ -381,7 +381,7 @@ goes. The current "About" section gestures at it but the numbers aren't there.
 Skip the review entirely and go straight to questions:
 
 ```bash
-npm run review -- https://example.org --persona cautious-researcher --repl-only
+npm run review -- https://example.org --persona evidence-and-accountability-checker --repl-only
 ```
 
 The browser session, page state, and conversation history are reused across
@@ -402,7 +402,7 @@ updates may overwrite that file.
 
 ```bash
 cp submit-data.yaml submit-data.local.yaml
-npm run review -- https://example.org --persona engaged-regular-supporter --allow-submit --submit-data ./submit-data.local.yaml
+npm run review -- https://example.org --persona regular-supporter-donor --allow-submit --submit-data ./submit-data.local.yaml
 ```
 
 The CLI prints a consent prompt summarizing the test identity and target
@@ -412,7 +412,7 @@ URL, then waits for `y` / `yes` before opening the browser:
 === --allow-submit: form submission ENABLED for this run ===
 
 Target URL: https://example.org/petition
-Persona:    Daniel (engaged-regular-supporter)
+Persona:    Daniel (regular-supporter-donor)
 
 Source: ./submit-data.local.yaml (pass --submit-data <path> to use your copy)
 Test identity that will be typed into form fields:
@@ -481,7 +481,7 @@ npm run review -- <url> [options]
 npm run review -- --list-personas
 npm run review -- --version
 
-  --persona <id>           Persona archetype id (default: curious-newcomer).
+  --persona <id>           Persona archetype id (default: newcomer-orientation-seeker).
   --provider <name>        LLM provider: 'anthropic', 'openai', or 'google'
                            (default: anthropic).
   --device <m|d>           Override the persona's device: 'mobile' or 'desktop'.
@@ -588,12 +588,12 @@ or `%USERPROFILE%\.persona-review\personas\` on Windows. Each file is
 validated against the Zod schema in `src/persona.ts`. Example:
 
 ```yaml
-id: curious-newcomer           # unique slug
+id: newcomer-orientation-seeker # unique slug
 name: Aisha                    # illustrative; LLM adapts in any language
 age: 27                        # optional
-role: Just learning about the cause
+role: New to the cause and deciding whether to engage
 cause_engagement: casual       # casual | regular | committed
-scrutiny: medium               # low-medium | medium | high
+scrutiny: low-medium           # low-medium | medium | high
 goals:
   - understand what this organization does in 30 seconds
   - decide whether it feels legitimate before doing anything
@@ -607,10 +607,10 @@ behaviours:
   - scans the headline, first call to action, and first proof point before reading
   - hesitates if commitment is requested before impact or legitimacy is clear
 tech_confidence: medium        # low-medium | medium | medium-high (no extremes)
-device: mobile                 # mobile | desktop | either
+device: either                 # mobile | desktop | either
 accessibility: []              # e.g. [larger-text, screen-reader]
 reading_level: general         # general | detailed
-voice: curious, friendly, easily distracted
+voice: curious, open-minded, easily discouraged by unclear entry points
 ```
 
 Notes:
@@ -635,27 +635,23 @@ the software.
 
 ## The persona library
 
-Built-in archetypes, all assuming **at least some interest in the cause**:
+Built-in archetypes, all assuming **at least some interest in the cause**.
+Most are audience personas. The fundraising and visual design specialists are
+expert lenses for teams that want a more professional critique.
 
 | id | who | device | tech | engagement | scrutiny |
 |---|---|---|---|---|---|
-| `curious-newcomer` | Aisha — just learning about the cause | mobile | medium | casual | medium |
-| `engaged-regular-supporter` | Daniel — donates to a few causes a year | desktop | medium | regular | medium |
-| `cautious-researcher` | Mei — vets organizations carefully | desktop | medium-high | regular | high |
-| `time-pressed-mobile-reader` | Lucia — reads on the go | mobile | medium | regular | low-medium |
-| `active-advocate` | Femi — volunteers and shares campaigns | desktop | medium-high | committed | medium |
-| `plain-language-reader` | Anna — prefers everyday words | mobile | medium | regular | medium |
-| `larger-text-reader` | Yusuf — reads at larger zoom levels | desktop | medium | regular | medium |
-| `legacy-and-planned-giving-prospect` | Margaret — considers major or planned giving | desktop | low-medium | committed | high |
+| `newcomer-orientation-seeker` | Aisha — new to the cause and deciding whether to engage | either | medium | casual | low-medium |
+| `time-pressed-task-completer` | Sofia — arrives with intent and wants to finish quickly | either | medium | regular | low-medium |
+| `regular-supporter-donor` | Daniel — gives occasionally and may consider recurring support | either | medium | regular | medium |
+| `evidence-and-accountability-checker` | Mei — checks evidence, transparency, and accountability | either | medium-high | regular | high |
+| `advocate-and-sharer` | Femi — wants to act, share, and bring others in | either | medium-high | committed | medium |
+| `plain-language-reader` | Anna — prefers everyday words | either | medium | regular | medium |
+| `accessibility-focused-reader` | Yusuf — uses assistive and adaptive settings | either | medium | regular | medium |
+| `help-seeker` | Rosa — needs support for themselves or someone close | either | medium | regular | medium |
+| `legacy-and-planned-giving-prospect` | Margaret — considers major or planned giving | either | low-medium | committed | high |
 | `marketing-fundraising-specialist` | Ines — reviews fundraising and engagement pages | either | medium-high | committed | high |
-| `impact-metrics-focused-donor` | David — wants measurable outcomes | desktop | medium-high | regular | high |
-| `skeptical-greenwashing-watcher` | Jordan — checks whether claims match actions | desktop | medium-high | committed | high |
-| `social-impact-sharer` | Aisha — shares cause content with peers | mobile | medium-high | committed | medium |
-| `first-time-overwhelmed-newcomer` | Sam — needs a clear beginner path | mobile | medium | casual | low-medium |
-| `visual-design-specialist` | Kenji — reviews visual composition | mobile | medium-high | committed | high |
-| `email-campaign-visitor` | Sofia — clicked through from a campaign email | mobile | medium | regular | low-medium |
-| `information-thorough-reader` | Marcus — reads everything before deciding | desktop | medium-high | committed | high |
-| `recurring-small-amount-giver` | Priya — gives a modest amount monthly | either | medium | regular | medium |
+| `visual-design-specialist` | Kenji — reviews visual composition | either | medium-high | committed | high |
 
 Run `npm run review -- --list-personas` for the same list with full role
 descriptions.

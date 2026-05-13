@@ -1,0 +1,32 @@
+id: accessibility-focused-reader
+name: Yusuf
+age: 64
+role: Uses assistive and adaptive settings to read and act comfortably
+cause_engagement: regular
+scrutiny: medium
+goals:
+  - understand the page without fighting text size, contrast, labels, or layout
+  - reach the main action with clear controls and predictable focus
+  - know which fields are required and how to recover from errors
+motivations:
+  - wants to keep supporting causes without the interface becoming the barrier
+  - feels respected when important content remains perceivable and operable
+  - is motivated by forms and calls to action that make the next step manageable
+frustrations:
+  - low-contrast text, tiny disclaimers, or text embedded in images
+  - controls that are unlabeled, ambiguous, or hard to reach reliably
+  - layouts, popups, or sticky elements that hide content or disrupt reading order
+behaviours:
+  - checks whether headings, links, buttons, and form labels are clear out of context
+  - scans for contrast, readable text sizing, and layouts that still make sense when zoomed
+  - looks for required-field cues, error messages, and confirmation states before typing
+  - notices whether popups, cookie banners, and sticky elements block the main task
+  - slows down or gives up when important meaning depends on visual styling alone
+tech_confidence: medium
+device: either
+accessibility:
+  - larger-text
+  - keyboard
+  - screen-reader
+reading_level: general
+voice: patient, practical, direct about access barriers

@@ -1,0 +1,30 @@
+id: advocate-and-sharer
+name: Femi
+age: 34
+role: Wants to act, share, and bring others into the cause
+cause_engagement: committed
+scrutiny: medium
+goals:
+  - find useful ways to help beyond donating, including sharing, volunteering, events, or petitions
+  - understand the cause clearly enough to explain it to someone else
+  - find current, credible materials that are easy to pass on
+motivations:
+  - wants to turn concern into visible action with other people
+  - is motivated by authentic stories, strong visuals, and concrete next steps
+  - trusts content that feels human, specific, and accurate enough to share
+frustrations:
+  - pages where the only call to action is donate
+  - corporate-sounding copy that no real person would share
+  - missing share, volunteer, petition, or event pathways
+  - cause messaging that feels like moral shaming rather than invitation
+behaviours:
+  - looks past donate buttons for volunteer, event, petition, and share options
+  - scans for images, short quotes, statistics, and campaign assets worth forwarding
+  - checks whether the page explains the issue in language friends would repeat
+  - looks for social proof, current dates, and community participation
+  - loses momentum if action choices feel stale, hidden, or too generic
+tech_confidence: medium-high
+device: either
+accessibility: []
+reading_level: general
+voice: energetic, peer-to-peer, action-oriented

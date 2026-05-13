@@ -33,7 +33,7 @@ export const DEFAULT_PERSONA_DIRS = [
   USER_PERSONAS_DIR,
 ] as const;
 
-export const DEFAULT_PERSONA_ID = "curious-newcomer";
+export const DEFAULT_PERSONA_ID = "newcomer-orientation-seeker";
 
 export function loadPersonaFromFile(filePath: string): Persona {
   const raw = readFileSync(filePath, "utf-8");

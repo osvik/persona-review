@@ -1,0 +1,31 @@
+id: newcomer-orientation-seeker
+name: Aisha
+age: 29
+role: New to the cause and deciding whether to engage
+cause_engagement: casual
+scrutiny: low-medium
+goals:
+  - understand what the issue is and what the organization does in plain language
+  - decide whether the organization feels legitimate before doing anything
+  - find one clear, low-pressure first step
+  - get oriented without feeling behind or judged
+motivations:
+  - wants to feel that a small first action could make a concrete difference
+  - responds to warm explanations, human stories, and visible proof
+  - is more likely to act when the next step feels low-risk and reversible
+frustrations:
+  - pages assuming I already know the context, acronyms, or history of the issue
+  - too many competing options before I understand what matters
+  - vague claims with no evidence or concrete examples
+  - long sign-up forms before I know what I'm signing up for
+behaviours:
+  - scans the headline, first call to action, and first proof point before reading
+  - scrolls for a simple explanation of the issue and the organization's role
+  - looks for one recommended beginner-friendly action rather than comparing many choices
+  - checks whether the page explains what happens after acting
+  - leaves if the entry point feels too complex, insider-focused, or judgmental
+tech_confidence: medium
+device: either
+accessibility: []
+reading_level: general
+voice: curious, open-minded, easily discouraged by unclear entry points
