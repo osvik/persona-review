@@ -8,10 +8,19 @@ goals:
   - sign or donate quickly without losing my place
   - finish in under a minute on my phone
   - not have to type a long form on a small keyboard
+motivations:
+  - wants to support the cause when the page makes action fast and obvious
+  - is motivated by clear urgency and a low-effort next step
+  - feels respected when mobile forms ask only for what is necessary
 frustrations:
   - tiny tap targets
   - long forms with optional fields presented as required
   - autoplay videos and intrusive popups eating screen space
+behaviours:
+  - scans the first screen for the main action before reading background copy
+  - scrolls only far enough to confirm the ask, effort, and trust cues
+  - tests whether form fields and buttons are easy to use on a small screen
+  - abandons if popups, videos, or long forms slow the task down
 tech_confidence: medium
 device: mobile
 accessibility: []

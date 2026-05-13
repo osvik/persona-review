@@ -45,7 +45,7 @@ Reactions are written in the page's own language, as a native speaker.
    persona doesn't critique a half-booted UI.
 2. Captures the page's **accessibility tree**, the **page language**
    (`<html lang>`), and a **JPEG screenshot** of the top viewport.
-3. Runs an **agent loop** as one of **12 persona archetypes**: observe →
+3. Runs an **agent loop** as one of the built-in **persona archetypes**: observe →
    choose an action (scroll / click / type) → observe again → repeat. Form
    submission is blocked. The persona narrates only at the end.
 4. Prints a final review — summary in the persona's voice (in the page's
@@ -597,9 +597,15 @@ scrutiny: medium               # low-medium | medium | high
 goals:
   - understand what this organization does in 30 seconds
   - decide whether it feels legitimate before doing anything
+motivations:
+  - wants to feel their small action could make a concrete difference
+  - responds to human stories when they are backed by clear proof
 frustrations:
   - jargon and acronyms
   - vague claims with no evidence
+behaviours:
+  - scans the headline, first call to action, and first proof point before reading
+  - hesitates if commitment is requested before impact or legitimacy is clear
 tech_confidence: medium        # low-medium | medium | medium-high (no extremes)
 device: mobile                 # mobile | desktop | either
 accessibility: []              # e.g. [larger-text, screen-reader]
@@ -611,10 +617,13 @@ Notes:
 
 - **No `locale` field.** Language is auto-detected from the page's
   `<html lang>` at runtime, so each persona works in any language.
+- `motivations` and `behaviours` are optional for custom personas. If omitted,
+  they default to empty arrays, so older custom persona files still load.
 - `tech_confidence` is restricted to a middle band — no zero-tech and no
   power-user, by design.
-- We describe **UX-relevant traits** (goals, frustrations, tech confidence,
-  device, accessibility needs) and avoid demographic caricature.
+- We describe **UX-relevant traits** (goals, motivations, frustrations,
+  behaviours, tech confidence, device, accessibility needs) and avoid
+  demographic caricature.
 
 You can drop your own custom YAML files into your personal personas directory
 and they'll be picked up by `--list-personas` and `--persona <id>`. If a custom
@@ -626,7 +635,7 @@ the software.
 
 ## The persona library
 
-Ten archetypes, all assuming **at least some interest in the cause**:
+Built-in archetypes, all assuming **at least some interest in the cause**:
 
 | id | who | device | tech | engagement | scrutiny |
 |---|---|---|---|---|---|
@@ -637,6 +646,13 @@ Ten archetypes, all assuming **at least some interest in the cause**:
 | `active-advocate` | Femi — volunteers and shares campaigns | desktop | medium-high | committed | medium |
 | `plain-language-reader` | Anna — prefers everyday words | mobile | medium | regular | medium |
 | `larger-text-reader` | Yusuf — reads at larger zoom levels | desktop | medium | regular | medium |
+| `legacy-and-planned-giving-prospect` | Margaret — considers major or planned giving | desktop | low-medium | committed | high |
+| `marketing-fundraising-specialist` | Ines — reviews fundraising and engagement pages | either | medium-high | committed | high |
+| `impact-metrics-focused-donor` | David — wants measurable outcomes | desktop | medium-high | regular | high |
+| `skeptical-greenwashing-watcher` | Jordan — checks whether claims match actions | desktop | medium-high | committed | high |
+| `social-impact-sharer` | Aisha — shares cause content with peers | mobile | medium-high | committed | medium |
+| `first-time-overwhelmed-newcomer` | Sam — needs a clear beginner path | mobile | medium | casual | low-medium |
+| `visual-design-specialist` | Kenji — reviews visual composition | mobile | medium-high | committed | high |
 | `email-campaign-visitor` | Sofia — clicked through from a campaign email | mobile | medium | regular | low-medium |
 | `information-thorough-reader` | Marcus — reads everything before deciding | desktop | medium-high | committed | high |
 | `recurring-small-amount-giver` | Priya — gives a modest amount monthly | either | medium | regular | medium |

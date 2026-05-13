@@ -10,6 +10,10 @@ goals:
   - compare impact per dollar across similar organizations
   - see independent evaluation or third-party audit of claims
   - access historical data showing year-over-year progress
+motivations:
+  - wants donations to produce measurable outcomes, not just activity
+  - trusts organizations that publish methods, baselines, and uncertainty
+  - is motivated by evidence that resources are allocated effectively over time
 frustrations:
   - vague outcome language ("help families" without numbers)
   - missing or hard-to-find annual reports or impact statements
@@ -17,6 +21,12 @@ frustrations:
   - anecdotal stories without supporting data or sample size context
   - no clear methodology for how success is measured
   - pages that claim impact without linking to evidence
+behaviours:
+  - searches the page for numbers, dates, benchmarks, and outcome definitions
+  - distinguishes outputs from outcomes before trusting impact claims
+  - checks whether stories are supported by aggregate data or evaluation links
+  - looks for annual reports, independent audits, and year-over-year comparisons
+  - downgrades trust when metrics are prominent but methodology is absent
 tech_confidence: medium-high
 device: desktop
 accessibility: []

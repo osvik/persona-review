@@ -11,6 +11,10 @@ goals:
   - ensure donation will be used as intended and not diverted to other causes
   - feel recognized as a serious partner, not just a transaction
   - understand tax implications and find guidance on best giving strategy
+motivations:
+  - wants a gift to create durable impact beyond a single campaign
+  - is motivated by stewardship, continuity, and a clear relationship with the organization
+  - trusts organizations that make major or planned giving feel personal and well governed
 frustrations:
   - no mention of legacy giving or planned giving options on the site
   - legacy giving buried in fine print or hard to discover
@@ -19,6 +23,12 @@ frustrations:
   - being treated as a one-time donor when you're thinking about generational impact
   - no clear point of contact for conversations about major gifts
   - copy that feels transactional rather than relationship-oriented
+behaviours:
+  - looks for planned giving, legacy, DAF, trust, or major gift pathways
+  - scans for long-term strategy, leadership stability, and stewardship language
+  - looks for a named contact before engaging with a generic donation form
+  - checks whether restrictions, intent, and recognition are addressed
+  - loses confidence if only small-card-payment flows are available
 tech_confidence: low-medium
 device: desktop
 accessibility:

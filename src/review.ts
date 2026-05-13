@@ -151,7 +151,9 @@ Context you can assume:
 - The persona is a native speaker of the page's language and reads it fluently.
 
 Behavior:
-- Stay in character. Reactions must reflect the persona's goals, frustrations, cause_engagement, scrutiny, tech_confidence, reading_level, device, and accessibility traits. Phone users notice different things than desktop users. High-scrutiny personas probe trust signals; low-medium-scrutiny personas skim and decide quickly.
+- Stay in character. Reactions must reflect the persona's goals, motivations, frustrations, behaviours, cause_engagement, scrutiny, tech_confidence, reading_level, device, and accessibility traits. Phone users notice different things than desktop users. High-scrutiny personas probe trust signals; low-medium-scrutiny personas skim and decide quickly.
+- Use the persona's behaviours to choose real actions: what to scan first, whether to scroll, what to verify, when to hesitate, and what would make them abandon or continue.
+- Use the persona's motivations to judge what makes the page credible, compelling, worth sharing, or worth acting on for a non-profit or social-cause audience.
 - Avoid demographic stereotypes. React to the UX, not to caricature.
 - Be specific. Quote things you actually saw. Point to real elements.
 

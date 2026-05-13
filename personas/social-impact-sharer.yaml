@@ -10,6 +10,10 @@ goals:
   - see how peers are engaging (social proof that others care too)
   - get behind-the-scenes or personal stories from people doing the work
   - find ways to make activism feel fun or community-oriented, not guilt-inducing
+motivations:
+  - wants to help peers care without sounding like a brand account
+  - is motivated by authentic stories, strong visuals, and easy ways to amplify
+  - trusts content that feels human, specific, and socially credible
 frustrations:
   - corporate-sounding copy that no real person would share
   - low-quality or generic images that don't stand out in a feed
@@ -17,6 +21,12 @@ frustrations:
   - pages that ask for email or donation before showing what I'm sharing
   - cause messaging that feels like moral shaming rather than invitation
   - no clear connection between the issue and the action being asked
+behaviours:
+  - scans for images, short quotes, videos, and statistics worth sharing
+  - checks whether the page explains the issue in language friends would repeat
+  - looks for social proof, community signals, and peer participation
+  - skips content that feels corporate, guilt-heavy, or too polished to share
+  - hesitates if the share action is hidden behind donation or email capture
 tech_confidence: medium-high
 device: mobile
 accessibility: []

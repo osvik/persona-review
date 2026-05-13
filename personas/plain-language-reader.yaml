@@ -8,10 +8,19 @@ goals:
   - understand the issue without a dictionary
   - feel that the page was written for someone like me
   - act if I genuinely understand what I'm being asked to do
+motivations:
+  - wants the organization to make the issue feel understandable, not exclusive
+  - is motivated by direct language that connects action to outcome
+  - trusts pages that explain unfamiliar terms without making a fuss
 frustrations:
   - acronyms used without explanation
   - long paragraphs of dense text
   - being asked to agree to things written in legal-style language
+behaviours:
+  - reads headlines and first sentences to see if the page uses everyday words
+  - slows down at acronyms, abstract nouns, and unexplained campaign terms
+  - looks for a plain explanation of what the action means before committing
+  - gives up when legalistic or insider language controls the main ask
 tech_confidence: medium
 device: mobile
 accessibility: []

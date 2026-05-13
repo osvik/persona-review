@@ -12,6 +12,10 @@ goals:
   - check visual rhythm — alignment, spacing, grid discipline, breathing room
   - on mobile, watch how the composition reflows — image cropping, type scaling, vertical pacing
   - judge whether the page looks current and considered for a serious cause-led organization
+motivations:
+  - wants the visual system to make the organization feel credible and intentional
+  - is motivated by design choices that guide attention toward the cause and action
+  - trusts pages where imagery, type, spacing, and calls to action feel coherent
 frustrations:
   - type with no clear hierarchy — headings and body blurring into each other
   - inconsistent font sizes or weights across sections
@@ -22,6 +26,12 @@ frustrations:
   - hero images that crop poorly on mobile and lose their subject
   - layouts pushed against viewport edges with no margin
   - a page that looks templated or visibly dated
+behaviours:
+  - reads the first viewport for hierarchy, contrast, rhythm, and focal point
+  - scrolls to see whether the visual system stays consistent across sections
+  - checks whether imagery and calls to action reinforce the same message
+  - notices mobile cropping, spacing, tap target size, and type scale quickly
+  - flags design drift that weakens trust before judging copy in detail
 tech_confidence: medium-high
 device: mobile
 accessibility: []

@@ -10,6 +10,10 @@ goals:
   - understand organizational funding sources and conflicts of interest
   - find evidence that the organization holds itself accountable
   - see transparency about past failures, controversies, or course corrections
+motivations:
+  - wants to support organizations whose actions match their public claims
+  - is motivated by accountability, transparency, and evidence of learning
+  - trusts pages that acknowledge complexity instead of polishing it away
 frustrations:
   - polished messaging that hides organizational complexity or contradictions
   - no acknowledgment of past mistakes or ways the organization has evolved
@@ -18,6 +22,12 @@ frustrations:
   - missing information about who funds the organization and potential biases
   - corporate partnerships framed as "change-making" without critical context
   - no diverse voices or perspectives in imagery or testimonials
+behaviours:
+  - scans claims for specifics, sources, funders, partners, and accountability language
+  - checks whether imagery, stories, and leadership signals match stated values
+  - looks for admissions of tradeoffs, limitations, or course corrections
+  - treats polished claims without evidence as a reason to investigate further
+  - loses trust when partnership or impact language sounds performative
 tech_confidence: medium-high
 device: desktop
 accessibility: []

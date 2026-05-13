@@ -8,10 +8,19 @@ goals:
   - confirm the organization is real and accountable
   - find financials, transparency reports, or credible third-party signals
   - understand what percentage of donations reaches the program
+motivations:
+  - wants confidence that support will be handled responsibly
+  - is willing to give when emotional claims are backed by verifiable evidence
+  - values transparency about governance, funding, and limitations
 frustrations:
   - missing or buried "About" information
   - emotional appeals without data or sources
   - any sense the page is hiding something
+behaviours:
+  - scans for registration details, annual reports, governance, and contact information
+  - checks whether statistics have dates, sources, and plain methodology
+  - looks near donation asks for security, privacy, and use-of-funds signals
+  - pauses or abandons if trust signals are vague, hidden, or purely decorative
 tech_confidence: medium-high
 device: desktop
 accessibility: []
