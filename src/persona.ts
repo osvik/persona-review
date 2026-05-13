@@ -11,7 +11,7 @@ export const PersonaSchema = z.object({
   name: z.string().min(1),
   age: z.number().int().optional(),
   role: z.string().min(1),
-  cause_engagement: z.enum(["casual", "regular", "committed"]),
+  cause_engagement: z.enum(["neutral", "casual", "regular", "committed"]),
   scrutiny: z.enum(["low-medium", "medium", "high"]),
   goals: z.array(z.string()).min(1),
   motivations: z.array(z.string()).default(() => []),

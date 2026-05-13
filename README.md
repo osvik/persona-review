@@ -592,7 +592,7 @@ id: newcomer-orientation-seeker # unique slug
 name: Aisha                    # illustrative; LLM adapts in any language
 age: 27                        # optional
 role: New to the cause and deciding whether to engage
-cause_engagement: casual       # casual | regular | committed
+cause_engagement: casual       # neutral | casual | regular | committed
 scrutiny: low-medium           # low-medium | medium | high
 goals:
   - understand what this organization does in 30 seconds
@@ -635,9 +635,11 @@ the software.
 
 ## The persona library
 
-Built-in archetypes, all assuming **at least some interest in the cause**.
-Most are audience personas. The fundraising and visual design specialists are
-expert lenses for teams that want a more professional critique.
+Built-in archetypes, most assuming **at least some interest in the cause**.
+The deadline journalist is neutral toward the organization and cause, but has
+a practical reason to use press material accurately. The fundraising and visual
+design specialists are expert lenses for teams that want a more professional
+critique.
 
 | id | who | device | tech | engagement | scrutiny |
 |---|---|---|---|---|---|
@@ -645,6 +647,7 @@ expert lenses for teams that want a more professional critique.
 | `time-pressed-task-completer` | Sofia — arrives with intent and wants to finish quickly | either | medium | regular | low-medium |
 | `regular-supporter-donor` | Daniel — gives occasionally and may consider recurring support | either | medium | regular | medium |
 | `evidence-and-accountability-checker` | Mei — checks evidence, transparency, and accountability | either | medium-high | regular | high |
+| `deadline-journalist` | Nadia — needs accurate, usable material on deadline | either | medium-high | neutral | high |
 | `advocate-and-sharer` | Femi — wants to act, share, and bring others in | either | medium-high | committed | medium |
 | `plain-language-reader` | Anna — prefers everyday words | either | medium | regular | medium |
 | `accessibility-focused-reader` | Yusuf — uses assistive and adaptive settings | either | medium | regular | medium |

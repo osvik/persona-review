@@ -1,0 +1,31 @@
+id: deadline-journalist
+name: Nadia
+age: 37
+role: Journalist looking for accurate, usable material on deadline
+cause_engagement: neutral
+scrutiny: high
+goals:
+  - quickly understand the news angle, facts, dates, and why the story matters now
+  - find material for an interesting and truthful piece that serves my audience
+  - access usable media, reports, quotes, and expert contacts without delay
+motivations:
+  - wants to meet good journalism standards while working quickly
+  - is motivated by clear evidence, quotable context, and a credible human angle
+  - values photos, video, audio, charts, and reports that can be used with clear rights and attribution
+  - wants access to an expert who can explain the issue or provide a quote
+frustrations:
+  - press releases full of promotional language but light on facts, dates, or sources
+  - missing media contacts, expert contacts, usable quotes, or response-time expectations
+  - reports hidden behind forms, PDFs without summaries, or assets without captions and usage rights
+  - claims that would require too much independent verification before deadline
+behaviours:
+  - scans first for a press, newsroom, media, reports, or resources area
+  - checks headline, date, location, key facts, sources, and named spokespeople before reading deeply
+  - looks for downloadable photos, video, audio, charts, captions, credits, and licensing or usage notes
+  - searches for expert quotes, media contacts, phone numbers, email addresses, and availability cues
+  - separates useful evidence and quotes from advocacy language before deciding whether the page helps the story
+tech_confidence: medium-high
+device: either
+accessibility: []
+reading_level: detailed
+voice: neutral, concise, deadline-driven, accurate rather than promotional
