@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
 import readline from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import {
@@ -38,7 +39,7 @@ import {
 } from "./submit-data.js";
 
 interface Args extends UserDefaults {
-  command: "review" | "list-personas" | "help";
+  command: "review" | "list-personas" | "help" | "version";
   url?: string;
 }
 
@@ -77,6 +78,8 @@ function parseArgs(argv: string[]): ParsedArgs {
     const a = args[i];
     if (a === "-h" || a === "--help") {
       command = "help";
+    } else if (a === "-v" || a === "--version") {
+      command = "version";
     } else if (a === "--list-personas") {
       command = "list-personas";
     } else if (a === "--json") {
@@ -210,15 +213,29 @@ function parsePositiveNumber(value: string, flag: string): number {
   return parsed;
 }
 
+function getPackageVersion(): string {
+  const packageJson = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8")
+  ) as { version?: unknown };
+
+  return typeof packageJson.version === "string" ? packageJson.version : "unknown";
+}
+
+function printVersion() {
+  console.log(`persona-review ${getPackageVersion()}`);
+}
+
 function printHelp(defaultsPath: string = USER_DEFAULTS_PATH) {
   const help = `persona-review — AI persona feedback for non-profit web pages
 
 Usage:
   npx persona-review <url> [options]
   npx persona-review --list-personas
+  npx persona-review --version
   or
   npm run review -- <url> [options]
   npm run review -- --list-personas
+  npm run review -- --version
 
 Options:
   --persona <id>          Persona archetype id (default: ${DEFAULT_PERSONA_ID}).
@@ -261,6 +278,7 @@ Options:
                           persona has to scroll to see what's below).
   --no-<boolean-flag>     Disable a boolean option set in user defaults
                           for this run, e.g. --no-json or --no-repl.
+  -v, --version           Show the package version.
   -h, --help              Show this help.
 
 Environment:
@@ -294,6 +312,13 @@ evidence — use it to notice things, not to decide things.`;
 }
 
 async function main() {
+  const parsed = parseArgs(process.argv);
+
+  if (parsed.command === "version") {
+    printVersion();
+    return;
+  }
+
   let defaultsPath: string;
   try {
     defaultsPath = ensureUserDefaultsFile();
@@ -302,8 +327,6 @@ async function main() {
     console.error(`Error creating user defaults file: ${msg}`);
     process.exit(1);
   }
-
-  const parsed = parseArgs(process.argv);
 
   if (parsed.command === "help") {
     printHelp(defaultsPath);

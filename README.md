@@ -16,6 +16,7 @@ Reactions are written in the page's own language, as a native speaker.
   - [Configure the LLM provider](#configure-the-llm-provider)
   - [Usage](#usage)
     - [Help](#help)
+    - [Version](#version)
     - [User defaults](#user-defaults)
     - [Basic review with Anthropic model](#basic-review-with-anthropic-model)
     - [List the personas](#list-the-personas)
@@ -253,6 +254,14 @@ npm run review -- --help
 npx persona-review --help
 ```
 
+### Version
+
+```bash
+npm run review -- --version
+# or
+npx persona-review --version
+```
+
 ### User defaults
 
 On first run, persona-review creates an empty defaults file and an empty
@@ -470,6 +479,7 @@ npm run review -- https://example.org --allow-submit --submit-data ./submit-data
 ```
 npm run review -- <url> [options]
 npm run review -- --list-personas
+npm run review -- --version
 
   --persona <id>           Persona archetype id (default: curious-newcomer).
   --provider <name>        LLM provider: 'anthropic', 'openai', or 'google'
@@ -508,6 +518,7 @@ npm run review -- --list-personas
                            viewport only — the persona must scroll to see more).
   --no-<boolean-flag>      Disable a boolean option set in user defaults
                            for this run, e.g. --no-json or --no-repl.
+  -v, --version            Show the package version.
   -h, --help               Show help.
 ```
 
