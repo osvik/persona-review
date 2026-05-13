@@ -1,0 +1,30 @@
+id: evidence-and-accountability-checker
+name: Mei
+age: 42
+role: Checks evidence, transparency, and accountability before trusting or giving
+cause_engagement: regular
+scrutiny: high
+goals:
+  - confirm the organization is real, accountable, and aligned with its stated values
+  - find evidence for impact claims, financial stewardship, and governance
+  - understand funding sources, partners, limitations, and how success is measured
+motivations:
+  - wants confidence that support will be handled responsibly
+  - is willing to act when emotional claims are backed by verifiable evidence
+  - trusts organizations that publish methods, dates, sources, and acknowledge complexity
+frustrations:
+  - emotional appeals, statistics, or impact claims without dates or sources
+  - missing or buried information about governance, funding, financials, or methodology
+  - polished messaging that hides tradeoffs, conflicts, or past course corrections
+  - metrics that measure activity rather than outcomes
+behaviours:
+  - scans for registration details, annual reports, governance, funders, partners, and contact information
+  - checks whether statistics have dates, sources, benchmarks, and plain methodology
+  - distinguishes outputs from outcomes before trusting impact claims
+  - looks near donation asks for security, privacy, and use-of-funds signals
+  - pauses or abandons when trust signals are vague, hidden, or purely decorative
+tech_confidence: medium-high
+device: either
+accessibility: []
+reading_level: detailed
+voice: measured, evidence-led, polite but hard to convince

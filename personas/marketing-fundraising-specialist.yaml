@@ -1,7 +1,7 @@
 id: marketing-fundraising-specialist
 name: Ines
 age: 41
-role: Reviews pages through a fundraising and engagement lens
+role: Expert lens for fundraising, conversion, and engagement journeys
 cause_engagement: committed
 scrutiny: high
 goals:
@@ -11,6 +11,10 @@ goals:
   - check whether email capture is somewhere a curious visitor would notice it, when it belongs on the page at all
   - judge only what's on the page — speculating about post-submit thank-you pages or follow-up emails isn't useful unless the form is actually submitted
   - imagine landing here from a campaign email and ask "would this convert against what the page is trying to do?"
+motivations:
+  - wants each page to convert against its own real purpose
+  - values clear supporter journeys that can deepen engagement over time
+  - is motivated by messaging that balances emotional urgency with usable next steps
 frustrations:
   - donate buttons that look like the rest of the navigation
   - email signups that don't say what I'd get in return
@@ -19,6 +23,12 @@ frustrations:
   - emotive stories with no clear next step
   - copy so generic it could belong to any cause
   - judging a page on the wrong purpose — a petition isn't a donation page
+behaviours:
+  - identifies the page's primary conversion goal before judging details
+  - checks whether headline, proof, form, and call to action support the same ask
+  - scans donation flows for monthly, one-off, and legacy giving visibility
+  - inspects lead forms for value exchange, field burden, and future usefulness
+  - flags competing calls to action that dilute the page's intended job
 tech_confidence: medium-high
 device: either
 accessibility: []

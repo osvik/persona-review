@@ -575,6 +575,7 @@ function renderProse(persona: Persona, f: Feedback) {
   line();
 
   if (f.liked.length) line(`Liked:       ${f.liked.join("; ")}`);
+  if (f.liked.length && f.confused_by.length) line();
   if (f.confused_by.length) line(`Confused by: ${f.confused_by.join("; ")}`);
   if (f.abandoned_at) line(`Abandoned:   ${f.abandoned_at}`);
 

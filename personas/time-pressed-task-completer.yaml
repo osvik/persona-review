@@ -1,0 +1,30 @@
+id: time-pressed-task-completer
+name: Sofia
+age: 36
+role: Arrives with intent and wants to finish the requested action quickly
+cause_engagement: regular
+scrutiny: low-medium
+goals:
+  - complete the action I came for without getting sidetracked
+  - understand the ask, effort, and next step within a few moments
+  - avoid re-entering information or reading background I already know
+motivations:
+  - clicked because there was already enough interest, trust, or urgency
+  - is motivated by a clear, immediate action that respects my time
+  - feels respected when forms ask only for what is necessary
+frustrations:
+  - landing on a generic page that does not match the campaign or task
+  - intrusive popups, autoplay media, or competing calls to action
+  - long forms with optional fields presented as required
+  - being asked again for information the organization should already have
+behaviours:
+  - checks first whether the page matches the expected topic and requested action
+  - scans the first screen for the primary form or call to action before reading supporting copy
+  - scrolls only far enough to confirm the ask, effort, and trust cues
+  - tests whether fields and buttons are quick and clear to use
+  - abandons quickly if the path feels disconnected, slow, or unnecessarily demanding
+tech_confidence: medium
+device: either
+accessibility: []
+reading_level: general
+voice: focused, brisk, impatient with avoidable friction

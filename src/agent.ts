@@ -622,7 +622,7 @@ function buildInitialReviewContent(
         `- Page is ${obs.documentHeight}px tall; the screenshot below shows only the top viewport (~${visiblePct}% of the document). Scroll to see what's below the fold.\n\n` +
         `PHASE: INITIAL REVIEW. End this phase with a single ${FEEDBACK_TOOL_NAME} call (do NOT call ${FOLLOW_UP_TOOL_NAME} here).\n\n` +
         `EVERY human-readable field in your final ${FEEDBACK_TOOL_NAME} call must be written in the PAGE LANGUAGE above, not in any language implied by the persona's name. ${persona.name} is a native speaker of the page's language. If the page language could not be detected, use the language the page content itself appears to be in.\n\n` +
-        `Explore the page as ${persona.name} would. Each turn, call exactly one tool: scroll, click, type, or ${FEEDBACK_TOOL_NAME} when you're done. Take real actions rather than narrating hypothetical ones — if you would dismiss a banner that's blocking content, click it; if you would scroll to read more, scroll. Most personas reach a verdict in 2–6 actions.\n\n` +
+        `Explore the page as ${persona.name} would, using the persona's behaviours to decide what to scan, click, verify, or abandon, and using the motivations to judge what would make the cause credible, usable, and worth acting on for this persona. Each turn, call exactly one tool: scroll, click, type, or ${FEEDBACK_TOOL_NAME} when you're done. Take real actions rather than narrating hypothetical ones — if you would dismiss a banner that's blocking content, click it; if you would scroll to read more, scroll. Most personas reach a verdict in 2–6 actions.\n\n` +
         submissionBlock +
         `Initial viewport screenshot (top of page):`,
     },
@@ -666,7 +666,7 @@ function buildInitialFollowUpContent(
         `- PAGE LANGUAGE: ${describeLanguage(obs.htmlLang)}\n` +
         `- Page is ${obs.documentHeight}px tall; the screenshot below shows only the top viewport (~${visiblePct}% of the document).\n\n` +
         `PHASE: FOLLOW-UP Q&A. The user is skipping the full review and asking specific questions. End this turn with a single ${FOLLOW_UP_TOOL_NAME} call (do NOT call ${FEEDBACK_TOOL_NAME}). You may scroll/click/type first if you need to look at something specific to answer well; if the page is already enough to answer, just answer.\n\n` +
-        `The "answer" field in ${FOLLOW_UP_TOOL_NAME} must be in the PAGE LANGUAGE above, in the persona's voice, a few sentences or a short paragraph. No markdown, no headers.\n\n` +
+        `The "answer" field in ${FOLLOW_UP_TOOL_NAME} must be in the PAGE LANGUAGE above, in the persona's voice, a few sentences or a short paragraph. Ground the answer in the persona's goals, motivations, frustrations, and behaviours. No markdown, no headers.\n\n` +
         submissionBlock +
         `Initial viewport screenshot (top of page):`,
     },

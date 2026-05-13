@@ -11,10 +11,12 @@ export const PersonaSchema = z.object({
   name: z.string().min(1),
   age: z.number().int().optional(),
   role: z.string().min(1),
-  cause_engagement: z.enum(["casual", "regular", "committed"]),
+  cause_engagement: z.enum(["neutral", "casual", "regular", "committed"]),
   scrutiny: z.enum(["low-medium", "medium", "high"]),
   goals: z.array(z.string()).min(1),
+  motivations: z.array(z.string()).default(() => []),
   frustrations: z.array(z.string()).min(1),
+  behaviours: z.array(z.string()).default(() => []),
   tech_confidence: z.enum(["low-medium", "medium", "medium-high"]),
   device: z.enum(["mobile", "desktop", "either"]),
   accessibility: z.array(z.string()),
@@ -31,7 +33,7 @@ export const DEFAULT_PERSONA_DIRS = [
   USER_PERSONAS_DIR,
 ] as const;
 
-export const DEFAULT_PERSONA_ID = "curious-newcomer";
+export const DEFAULT_PERSONA_ID = "newcomer-orientation-seeker";
 
 export function loadPersonaFromFile(filePath: string): Persona {
   const raw = readFileSync(filePath, "utf-8");
