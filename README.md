@@ -17,6 +17,7 @@ Reactions are written in the page's own language, as a native speaker.
   - [Usage](#usage)
     - [Help](#help)
     - [Version](#version)
+    - [Status](#status)
     - [User defaults](#user-defaults)
     - [Basic review with Anthropic model](#basic-review-with-anthropic-model)
     - [List the personas](#list-the-personas)
@@ -238,6 +239,15 @@ key for the selected provider; nothing else leaves your machine except the
 HTTP request to the selected LLM provider and the page-load request to the
 target URL.
 
+Check which providers are ready and which model ids are built in:
+
+```bash
+npm run review -- --status
+```
+
+This only checks whether each provider's environment variable exists; it
+does not print API key values.
+
 **Model:** Anthropic defaults to `claude-sonnet-4-6`; OpenAI defaults to
 `gpt-5.4`; Google defaults to `gemini-3.1-pro-preview-customtools`. Override
 any provider with `--model`, e.g. `--model claude-opus-4-7`,
@@ -270,6 +280,18 @@ npm run review -- --version
 # or
 npx persona-review --version
 ```
+
+### Status
+
+```bash
+npm run review -- --status
+# or
+npx persona-review --status
+```
+
+Prints whether `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `GEMINI_API_KEY`
+are set, without showing their values. It also lists the model ids accepted by
+`--model` with built-in pricing.
 
 ### User defaults
 
@@ -487,6 +509,7 @@ npm run review -- https://example.org --allow-submit --submit-data ./submit-data
 
 ```
 npm run review -- <url> [options]
+npm run review -- --status
 npm run review -- --list-personas
 npm run review -- --version
 
@@ -494,6 +517,7 @@ npm run review -- --version
   --provider <name>        LLM provider: 'anthropic', 'openai', or 'google'
                            (default: anthropic).
   --device <m|d>           Override the persona's device: 'mobile' or 'desktop'.
+  --status                 Show provider readiness and available --model ids.
   --list-personas          Print available personas and exit.
   --json                   Emit JSON instead of prose. Mutually exclusive
                            with --repl / --repl-only.

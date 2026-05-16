@@ -79,6 +79,14 @@ function pricingKey(provider: Provider, model: string): string {
   return `${provider}:${model}`;
 }
 
+export function availableModelsFor(provider: Provider): string[] {
+  const prefix = `${provider}:`;
+  return Object.keys(PRICING)
+    .filter((key) => key.startsWith(prefix))
+    .map((key) => key.slice(prefix.length))
+    .sort();
+}
+
 export function pricingFor(provider: Provider, model: string): ModelPricing {
   const p = PRICING[pricingKey(provider, model)];
   if (!p) {

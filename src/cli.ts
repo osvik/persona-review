@@ -21,9 +21,11 @@ import {
   DEFAULT_GOOGLE_MODEL,
   DEFAULT_OPENAI_MODEL,
   DEFAULT_PROVIDER,
+  PROVIDER_ENV_VARS,
+  defaultModelForProvider,
   type PersonaConversation,
 } from "./agent.js";
-import { formatUsd } from "./cost.js";
+import { availableModelsFor, formatUsd } from "./cost.js";
 import {
   ensureUserDefaultsFile,
   loadUserDefaults,
@@ -37,9 +39,10 @@ import {
   loadSubmitData,
   type SubmitData,
 } from "./submit-data.js";
+import type { Provider } from "./llm/types.js";
 
 interface Args extends UserDefaults {
-  command: "review" | "list-personas" | "help" | "version";
+  command: "review" | "list-personas" | "status" | "help" | "version";
   url?: string;
 }
 
@@ -68,6 +71,8 @@ const SOFTWARE_DEFAULTS: UserDefaults = {
   yes: false,
 };
 
+const PROVIDERS: Provider[] = ["anthropic", "openai", "google"];
+
 function parseArgs(argv: string[]): ParsedArgs {
   const args = argv.slice(2);
   let url: string | undefined;
@@ -80,6 +85,8 @@ function parseArgs(argv: string[]): ParsedArgs {
       command = "help";
     } else if (a === "-v" || a === "--version") {
       command = "version";
+    } else if (a === "--status") {
+      command = "status";
     } else if (a === "--list-personas") {
       command = "list-personas";
     } else if (a === "--json") {
@@ -230,10 +237,12 @@ function printHelp(defaultsPath: string = USER_DEFAULTS_PATH) {
 
 Usage:
   npx persona-review <url> [options]
+  npx persona-review --status
   npx persona-review --list-personas
   npx persona-review --version
   or
   npm run review -- <url> [options]
+  npm run review -- --status
   npm run review -- --list-personas
   npm run review -- --version
 
@@ -243,6 +252,7 @@ Options:
                           (default: ${DEFAULT_PROVIDER}).
   --device <m|d>          Override the persona's device: 'mobile' (390x844)
                           or 'desktop' (1280x800). Default: per-persona.
+  --status                Show provider readiness and available --model ids.
   --list-personas         Print available personas and exit.
   --json                  Emit JSON feedback instead of prose. Cannot be
                           combined with --repl or --repl-only.
@@ -319,6 +329,11 @@ async function main() {
     return;
   }
 
+  if (parsed.command === "status") {
+    printStatus();
+    return;
+  }
+
   let defaultsPath: string;
   try {
     defaultsPath = ensureUserDefaultsFile();
@@ -354,12 +369,7 @@ async function main() {
     process.exit(1);
   }
 
-  const requiredKey =
-    opts.provider === "openai"
-      ? "OPENAI_API_KEY"
-      : opts.provider === "google"
-        ? "GEMINI_API_KEY"
-        : "ANTHROPIC_API_KEY";
+  const requiredKey = PROVIDER_ENV_VARS[opts.provider];
   if (!process.env[requiredKey]) {
     console.error(
       `Error: ${requiredKey} environment variable is required for --provider ${opts.provider}.`
@@ -564,6 +574,35 @@ async function printPersonaList() {
   }
   console.log(`Default persona: ${DEFAULT_PERSONA_ID}`);
   console.log(`Use --persona <id> to pick one.`);
+}
+
+function printStatus() {
+  console.log("Provider status:");
+  console.log();
+  for (const provider of PROVIDERS) {
+    const envVar = PROVIDER_ENV_VARS[provider];
+    const ready = isEnvironmentVariableSet(envVar);
+    console.log(
+      `  ${provider}: ${ready ? "ready" : "not ready"} (${envVar} ${ready ? "set" : "missing"})`
+    );
+  }
+
+  console.log();
+  console.log("Models for --model:");
+  console.log();
+  for (const provider of PROVIDERS) {
+    const defaultModel = defaultModelForProvider(provider);
+    console.log(`  ${provider}:`);
+    for (const model of availableModelsFor(provider)) {
+      const marker = model === defaultModel ? " (default)" : "";
+      console.log(`    - ${model}${marker}`);
+    }
+  }
+}
+
+function isEnvironmentVariableSet(name: string): boolean {
+  const value = process.env[name];
+  return value !== undefined && value.trim().length > 0;
 }
 
 function renderProse(persona: Persona, f: Feedback) {

@@ -45,6 +45,18 @@ export const DEFAULT_MAX_ACTIONS = 15;
 export const DEFAULT_COST_CAP_USD = 1.0;
 export const MAX_SUBMITS_PER_SESSION = 1;
 
+export const PROVIDER_ENV_VARS = {
+  anthropic: "ANTHROPIC_API_KEY",
+  openai: "OPENAI_API_KEY",
+  google: "GEMINI_API_KEY",
+} as const satisfies Record<Provider, string>;
+
+export function defaultModelForProvider(provider: Provider): string {
+  if (provider === "openai") return DEFAULT_OPENAI_MODEL;
+  if (provider === "google") return DEFAULT_GOOGLE_MODEL;
+  return DEFAULT_ANTHROPIC_MODEL;
+}
+
 export type StatusCallback = (msg: string) => void;
 
 export interface OpenConversationOptions {
@@ -208,13 +220,7 @@ export async function openConversation(
   opts: OpenConversationOptions = {}
 ): Promise<PersonaConversation> {
   const provider = opts.provider ?? DEFAULT_PROVIDER;
-  const model =
-    opts.model ??
-    (provider === "openai"
-      ? DEFAULT_OPENAI_MODEL
-      : provider === "google"
-        ? DEFAULT_GOOGLE_MODEL
-        : DEFAULT_ANTHROPIC_MODEL);
+  const model = opts.model ?? defaultModelForProvider(provider);
   const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
   const maxActions = opts.maxActions ?? DEFAULT_MAX_ACTIONS;
   const costCapUsd = opts.costCapUsd ?? DEFAULT_COST_CAP_USD;
