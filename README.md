@@ -127,11 +127,10 @@ npx persona-review
 npx playwright install chromium
 ```
 
-To use:
+To use you need an API key from Anthropic, Open AI or Google:
 
 ```bash
 # Use the export command to add your API key. See bellow for more info. 
-
 export ANTHROPIC_API_KEY=sk-ant...
 
 npx persona-review https://example.org/
@@ -158,6 +157,16 @@ npm run build
 `npm install` pulls the dependencies; `npx playwright install chromium`
 downloads the browser Playwright drives; `npm run build` compiles TypeScript
 to `dist/` and marks the CLI executable.
+
+To use you need an API key from Anthropic, Open AI or Google:
+
+```bash
+# Use the export command to add your API key. See bellow for more info. 
+export ANTHROPIC_API_KEY=sk-ant...
+
+npm run review -- https://example.org/
+```
+
 
 ---
 
