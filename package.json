@@ -1,6 +1,6 @@
 {
   "name": "persona-review",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "AI persona feedback tool for web pages — visit a page as a simulated persona and get reactions, friction points, and suggestions.",
   "repository": {
     "type": "git",
