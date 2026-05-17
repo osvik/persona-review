@@ -252,7 +252,9 @@ Options:
                           (default: ${DEFAULT_PROVIDER}).
   --device <m|d>          Override the persona's device: 'mobile' (390x844)
                           or 'desktop' (1280x800). Default: per-persona.
-  --status                Show provider readiness and available --model ids.
+  --status                Show provider readiness, available --model ids,
+                          and whether each default comes from software or
+                          user defaults.
   --list-personas         Print available personas and exit.
   --json                  Emit JSON feedback instead of prose. Cannot be
                           combined with --repl or --repl-only.
@@ -329,11 +331,6 @@ async function main() {
     return;
   }
 
-  if (parsed.command === "status") {
-    printStatus();
-    return;
-  }
-
   let defaultsPath: string;
   try {
     defaultsPath = ensureUserDefaultsFile();
@@ -360,6 +357,11 @@ async function main() {
     const msg = e instanceof Error ? e.message : String(e);
     console.error(`Error loading user defaults: ${msg}`);
     process.exit(1);
+  }
+
+  if (parsed.command === "status") {
+    printStatus(defaultsPath, userDefaults);
+    return;
   }
 
   const opts = resolveArgs(parsed, userDefaults);
@@ -576,7 +578,7 @@ async function printPersonaList() {
   console.log(`Use --persona <id> to pick one.`);
 }
 
-function printStatus() {
+function printStatus(defaultsPath: string, userDefaults: Partial<UserDefaults>) {
   console.log("Provider status:");
   console.log();
   for (const provider of PROVIDERS) {
@@ -598,11 +600,124 @@ function printStatus() {
       console.log(`    - ${model}${marker}`);
     }
   }
+
+  console.log();
+  console.log("Default sources:");
+  console.log();
+  console.log(`  user defaults file: ${defaultsPath}`);
+  const opts = resolveArgs(
+    { command: "review", overrides: {} },
+    userDefaults
+  );
+  for (const item of describeDefaultSources(opts, userDefaults)) {
+    console.log(`  ${item.name}: ${item.value} (${item.source})`);
+  }
 }
 
 function isEnvironmentVariableSet(name: string): boolean {
   const value = process.env[name];
   return value !== undefined && value.trim().length > 0;
+}
+
+function describeDefaultSources(
+  opts: Args,
+  userDefaults: Partial<UserDefaults>
+): { name: string; value: string; source: "software" | "user" }[] {
+  return [
+    {
+      name: "persona",
+      value: opts.personaId,
+      source: defaultSource(userDefaults, "personaId"),
+    },
+    {
+      name: "provider",
+      value: opts.provider,
+      source: defaultSource(userDefaults, "provider"),
+    },
+    {
+      name: "model",
+      value: opts.model ?? defaultModelForProvider(opts.provider),
+      source: defaultSource(userDefaults, "model"),
+    },
+    {
+      name: "device",
+      value: opts.device ?? "per persona",
+      source: defaultSource(userDefaults, "device"),
+    },
+    {
+      name: "json",
+      value: formatDefaultValue(opts.json),
+      source: defaultSource(userDefaults, "json"),
+    },
+    {
+      name: "repl",
+      value: formatDefaultValue(opts.repl),
+      source: defaultSource(userDefaults, "repl"),
+    },
+    {
+      name: "repl_only",
+      value: formatDefaultValue(opts.replOnly),
+      source: defaultSource(userDefaults, "replOnly"),
+    },
+    {
+      name: "allow_submit",
+      value: formatDefaultValue(opts.allowSubmit),
+      source: defaultSource(userDefaults, "allowSubmit"),
+    },
+    {
+      name: "allow_downloads",
+      value: formatDefaultValue(opts.allowDownloads),
+      source: defaultSource(userDefaults, "allowDownloads"),
+    },
+    {
+      name: "allow_cross_page_navigation",
+      value: formatDefaultValue(opts.allowCrossPageNavigation),
+      source: defaultSource(userDefaults, "allowCrossPageNavigation"),
+    },
+    {
+      name: "submit_data",
+      value: opts.submitDataPath ?? "bundled submit-data.yaml",
+      source: defaultSource(userDefaults, "submitDataPath"),
+    },
+    {
+      name: "yes",
+      value: formatDefaultValue(opts.yes),
+      source: defaultSource(userDefaults, "yes"),
+    },
+    {
+      name: "max_tokens",
+      value: formatDefaultValue(opts.maxOutputTokens),
+      source: defaultSource(userDefaults, "maxOutputTokens"),
+    },
+    {
+      name: "max_actions",
+      value: formatDefaultValue(opts.maxActions),
+      source: defaultSource(userDefaults, "maxActions"),
+    },
+    {
+      name: "cost_cap_usd",
+      value: formatDefaultValue(opts.costCapUsd),
+      source: defaultSource(userDefaults, "costCapUsd"),
+    },
+    {
+      name: "full_page_snapshot",
+      value: formatDefaultValue(opts.fullPage),
+      source: defaultSource(userDefaults, "fullPage"),
+    },
+  ];
+}
+
+function defaultSource(
+  userDefaults: Partial<UserDefaults>,
+  key: keyof UserDefaults
+): "software" | "user" {
+  return Object.prototype.hasOwnProperty.call(userDefaults, key)
+    ? "user"
+    : "software";
+}
+
+function formatDefaultValue(value: string | number | boolean): string {
+  return String(value);
 }
 
 function renderProse(persona: Persona, f: Feedback) {

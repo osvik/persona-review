@@ -239,7 +239,8 @@ key for the selected provider; nothing else leaves your machine except the
 HTTP request to the selected LLM provider and the page-load request to the
 target URL.
 
-Check which providers are ready and which model ids are built in:
+Check which providers are ready, which model ids are built in, and where
+defaults come from:
 
 ```bash
 npm run review -- --status
@@ -291,7 +292,8 @@ npx persona-review --status
 
 Prints whether `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `GEMINI_API_KEY`
 are set, without showing their values. It also lists the model ids accepted by
-`--model` with built-in pricing.
+`--model` with built-in pricing, then shows every effective default and
+whether it came from the software or the user defaults file.
 
 ### User defaults
 
@@ -517,7 +519,8 @@ npm run review -- --version
   --provider <name>        LLM provider: 'anthropic', 'openai', or 'google'
                            (default: anthropic).
   --device <m|d>           Override the persona's device: 'mobile' or 'desktop'.
-  --status                 Show provider readiness and available --model ids.
+  --status                 Show provider readiness, available --model ids,
+                           and default sources.
   --list-personas          Print available personas and exit.
   --json                   Emit JSON instead of prose. Mutually exclusive
                            with --repl / --repl-only.
