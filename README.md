@@ -234,10 +234,29 @@ export GEMINI_API_KEY=...
 npm run review -- https://example.org --provider google
 ```
 
-Or put keys in a `.env` and source it before running. The CLI reads only the
-key for the selected provider; nothing else leaves your machine except the
-HTTP request to the selected LLM provider and the page-load request to the
-target URL.
+You can also store the API key in an `.env` file. First let's create the file with an editor:
+
+```bash
+nano .env
+```
+
+Put the API key with the  `export variable` sintax in the `.env` file and exit + save:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+and then run:
+
+```bash
+source .env
+```
+
+Now both this should work with both `npx-persona-review` or `npm run review --`.
+
+The CLI reads only the key for the selected provider; nothing else leaves your
+machine except the HTTP request to the selected LLM provider and the page-load
+request to the target URL.
 
 Check which providers are ready, which model ids are built in, and where
 defaults come from:
