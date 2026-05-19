@@ -126,10 +126,10 @@ To install the browser dependency, run this once:
 npx persona-review --install-browsers
 ```
 
-This downloads Chromium for the Playwright version bundled with
-`persona-review`. Do not use plain `npx playwright install chromium` for this
-npm/npx install method; it can install Chromium for a different Playwright
-package.
+This downloads the Chromium artifacts needed by the Playwright version bundled
+with `persona-review`, including the headless shell used for reviews. Do not
+use plain `npx playwright install chromium` for this npm/npx install method; it
+can install Chromium for a different Playwright package.
 
 To use you need an API key from Anthropic, Open AI or Google:
 

@@ -263,7 +263,10 @@ async function installBrowsers(): Promise<void> {
   console.error(
     "Installing Chromium for the Playwright version bundled with persona-review..."
   );
-  await playwrightRegistry().installBrowsersForNpmInstall(["chromium"]);
+  await playwrightRegistry().installBrowsersForNpmInstall([
+    "chromium",
+    "chromium-headless-shell",
+  ]);
 }
 
 function isMissingPlaywrightBrowserError(error: unknown): boolean {
