@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import readline from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import {
@@ -42,7 +43,13 @@ import {
 import type { Provider } from "./llm/types.js";
 
 interface Args extends UserDefaults {
-  command: "review" | "list-personas" | "status" | "help" | "version";
+  command:
+    | "review"
+    | "list-personas"
+    | "status"
+    | "help"
+    | "version"
+    | "install-browsers";
   url?: string;
 }
 
@@ -50,6 +57,10 @@ interface ParsedArgs {
   command: Args["command"];
   url?: string;
   overrides: Partial<UserDefaults>;
+}
+
+interface PlaywrightRegistryModule {
+  installBrowsersForNpmInstall(browsers: string[]): Promise<unknown>;
 }
 
 const SOFTWARE_DEFAULTS: UserDefaults = {
@@ -72,6 +83,7 @@ const SOFTWARE_DEFAULTS: UserDefaults = {
 };
 
 const PROVIDERS: Provider[] = ["anthropic", "openai", "google"];
+const require = createRequire(import.meta.url);
 
 function parseArgs(argv: string[]): ParsedArgs {
   const args = argv.slice(2);
@@ -85,6 +97,13 @@ function parseArgs(argv: string[]): ParsedArgs {
       command = "help";
     } else if (a === "-v" || a === "--version") {
       command = "version";
+    } else if (
+      a === "install-browsers" ||
+      a === "install-browser" ||
+      a === "--install-browsers" ||
+      a === "--install-browser"
+    ) {
+      command = "install-browsers";
     } else if (a === "--status") {
       command = "status";
     } else if (a === "--list-personas") {
@@ -232,6 +251,49 @@ function printVersion() {
   console.log(`persona-review ${getPackageVersion()}`);
 }
 
+function playwrightRegistry(): PlaywrightRegistryModule {
+  const packageJsonPath = require.resolve("playwright/package.json");
+  const playwrightRequire = createRequire(packageJsonPath);
+  return playwrightRequire(
+    "playwright-core/lib/server/registry/index"
+  ) as PlaywrightRegistryModule;
+}
+
+async function installBrowsers(): Promise<void> {
+  console.error(
+    "Installing Chromium for the Playwright version bundled with persona-review..."
+  );
+  await playwrightRegistry().installBrowsersForNpmInstall(["chromium"]);
+}
+
+function isMissingPlaywrightBrowserError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("Looks like Playwright was just installed or updated") ||
+    (message.includes("Executable doesn't exist") &&
+      message.includes("playwright install"))
+  );
+}
+
+function printMissingPlaywrightBrowserHelp() {
+  console.error(
+    [
+      "Error: Chromium is not installed for persona-review's Playwright version.",
+      "",
+      "If you installed via npm/npx, install it with:",
+      "  npx persona-review --install-browsers",
+      "",
+      "If you are in a development checkout, install it with:",
+      "  npm run review -- --install-browsers",
+      "",
+      "Then retry your review command.",
+      "",
+      "Do not use plain `npx playwright install chromium` for the npm install path;",
+      "that can install a browser for a different Playwright package.",
+    ].join("\n")
+  );
+}
+
 function printHelp(defaultsPath: string = USER_DEFAULTS_PATH) {
   const help = `persona-review — AI persona feedback for non-profit web pages
 
@@ -239,11 +301,13 @@ Usage:
   npx persona-review <url> [options]
   npx persona-review --status
   npx persona-review --list-personas
+  npx persona-review --install-browsers
   npx persona-review --version
   or
   npm run review -- <url> [options]
   npm run review -- --status
   npm run review -- --list-personas
+  npm run review -- --install-browsers
   npm run review -- --version
 
 Options:
@@ -256,6 +320,9 @@ Options:
                           and whether each default comes from software or
                           user defaults.
   --list-personas         Print available personas and exit.
+  --install-browsers      Download Chromium for the Playwright version bundled
+                          with persona-review. Run once after npm/npx install
+                          or after a persona-review update.
   --json                  Emit JSON feedback instead of prose. Cannot be
                           combined with --repl or --repl-only.
   --repl                  After the initial review, enter an interactive
@@ -328,6 +395,17 @@ async function main() {
 
   if (parsed.command === "version") {
     printVersion();
+    return;
+  }
+
+  if (parsed.command === "install-browsers") {
+    try {
+      await installBrowsers();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`Error installing Playwright browsers: ${msg}`);
+      process.exit(1);
+    }
     return;
   }
 
@@ -412,20 +490,31 @@ async function main() {
     if (!opts.json) console.error(msg);
   };
 
-  const conv = await openConversation(persona, opts.url!, {
-    provider: opts.provider,
-    model: opts.model,
-    maxOutputTokens: opts.maxOutputTokens,
-    maxActions: opts.maxActions,
-    costCapUsd: opts.costCapUsd,
-    fullPage: opts.fullPage,
-    device: opts.device,
-    onStatus,
-    allowSubmit: opts.allowSubmit,
-    allowDownloads: opts.allowDownloads,
-    allowCrossPageNavigation: opts.allowCrossPageNavigation,
-    submitData,
-  });
+  let conv: PersonaConversation;
+  try {
+    conv = await openConversation(persona, opts.url!, {
+      provider: opts.provider,
+      model: opts.model,
+      maxOutputTokens: opts.maxOutputTokens,
+      maxActions: opts.maxActions,
+      costCapUsd: opts.costCapUsd,
+      fullPage: opts.fullPage,
+      device: opts.device,
+      onStatus,
+      allowSubmit: opts.allowSubmit,
+      allowDownloads: opts.allowDownloads,
+      allowCrossPageNavigation: opts.allowCrossPageNavigation,
+      submitData,
+    });
+  } catch (e) {
+    if (isMissingPlaywrightBrowserError(e)) {
+      printMissingPlaywrightBrowserHelp();
+    } else {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`Error opening browser: ${msg}`);
+    }
+    process.exit(1);
+  }
 
   let sigintHandled = false;
   const sigintHandler = () => {

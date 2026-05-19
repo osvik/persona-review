@@ -120,13 +120,16 @@ Choose ONE of the methods bellow. If you prefer you can use the **[free Google C
 
 You just need to have installed [Nodejs version 20 or more](https://nodejs.org/en/download).
 
-To install:
+To install the browser dependency, run this once:
 
 ```bash
-npx persona-review
-
-npx playwright install chromium
+npx persona-review --install-browsers
 ```
+
+This downloads Chromium for the Playwright version bundled with
+`persona-review`. Do not use plain `npx playwright install chromium` for this
+npm/npx install method; it can install Chromium for a different Playwright
+package.
 
 To use you need an API key from Anthropic, Open AI or Google:
 
@@ -156,8 +159,8 @@ npm run build
 ```
 
 `npm install` pulls the dependencies; `npx playwright install chromium`
-downloads the browser Playwright drives; `npm run build` compiles TypeScript
-to `dist/` and marks the CLI executable.
+downloads the browser for the local Playwright dependency; `npm run build`
+compiles TypeScript to `dist/` and marks the CLI executable.
 
 To use you need an API key from Anthropic, Open AI or Google:
 
@@ -252,7 +255,7 @@ and then run:
 source .env
 ```
 
-Now both this should work with both `npx-persona-review` or `npm run review --`.
+Now this should work with both `npx persona-review` or `npm run review --`.
 
 The CLI reads only the key for the selected provider; nothing else leaves your
 machine except the HTTP request to the selected LLM provider and the page-load
