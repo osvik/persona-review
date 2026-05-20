@@ -127,9 +127,10 @@ npx persona-review --install-browsers
 ```
 
 This downloads the Chromium artifacts needed by the Playwright version bundled
-with `persona-review`, including the headless shell used for reviews. Do not
-use plain `npx playwright install chromium` for this npm/npx install method; it
-can install Chromium for a different Playwright package.
+with `persona-review`, including the headless shell used for reviews. On Linux,
+it also installs the system packages Chromium needs. Do not use plain
+`npx playwright install chromium` for this npm/npx install method; it can
+install Chromium for a different Playwright package.
 
 To use you need an API key from Anthropic, Open AI or Google:
 
@@ -189,12 +190,11 @@ docker run -it --init --ipc=host --name persona-review node:20-bookworm /bin/bas
 **Install inside your container (just once):**
 
 ```bash
-mkdir /app
-cd /app
-npm init -y
-npm install persona-review
-npx playwright install --with-deps chromium
+npx persona-review --install-browsers
 ```
+
+The official `node:20-bookworm` image runs as root by default, so this command
+can install both the browser artifacts and the Linux packages Chromium needs.
 
 Test it with your API key:
 

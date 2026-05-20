@@ -61,6 +61,13 @@ interface ParsedArgs {
 
 interface PlaywrightRegistryModule {
   installBrowsersForNpmInstall(browsers: string[]): Promise<unknown>;
+  registry: {
+    resolveBrowsers(
+      aliases: string[],
+      options: { shell?: "no" | "only" | undefined }
+    ): unknown[];
+    installDeps(executables: unknown[], dryRun: boolean): Promise<unknown>;
+  };
 }
 
 const SOFTWARE_DEFAULTS: UserDefaults = {
@@ -260,10 +267,17 @@ function playwrightRegistry(): PlaywrightRegistryModule {
 }
 
 async function installBrowsers(): Promise<void> {
+  const playwright = playwrightRegistry();
+  if (process.platform === "linux") {
+    console.error("Installing Linux host dependencies for Chromium...");
+    const executables = playwright.registry.resolveBrowsers(["chromium"], {});
+    await playwright.registry.installDeps(executables, false);
+  }
+
   console.error(
     "Installing Chromium for the Playwright version bundled with persona-review..."
   );
-  await playwrightRegistry().installBrowsersForNpmInstall([
+  await playwright.installBrowsersForNpmInstall([
     "chromium",
     "chromium-headless-shell",
   ]);
@@ -325,7 +339,8 @@ Options:
   --list-personas         Print available personas and exit.
   --install-browsers      Download Chromium for the Playwright version bundled
                           with persona-review. Run once after npm/npx install
-                          or after a persona-review update.
+                          or after a persona-review update. On Linux, this
+                          also installs Chromium host dependencies.
   --json                  Emit JSON feedback instead of prose. Cannot be
                           combined with --repl or --repl-only.
   --repl                  After the initial review, enter an interactive
