@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { getRequiredApiKey } from "../keys.js";
 import type {
   ContentBlock,
   CreateModelResponseOptions,
@@ -16,8 +17,13 @@ export class AnthropicClient implements ModelClient {
   public readonly provider = "anthropic" as const;
   private readonly client: Anthropic;
 
-  constructor() {
-    this.client = new Anthropic();
+  constructor(apiKey = getRequiredApiKey("ANTHROPIC_API_KEY")) {
+    if (!apiKey.trim()) {
+      throw new Error(
+        "ANTHROPIC_API_KEY is required. Set it as an environment variable or add it to ~/.persona-review/keys.yaml."
+      );
+    }
+    this.client = new Anthropic({ apiKey: apiKey.trim() });
   }
 
   async createResponse(

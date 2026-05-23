@@ -40,6 +40,7 @@ import {
   loadSubmitData,
   type SubmitData,
 } from "./submit-data.js";
+import { lookupApiKey, USER_KEYS_PATH } from "./keys.js";
 import type { Provider } from "./llm/types.js";
 
 interface Args extends UserDefaults {
@@ -383,6 +384,11 @@ Environment:
   OPENAI_API_KEY       Required for --provider openai.
   GEMINI_API_KEY       Required for --provider google.
 
+API keys:
+  Environment variables take precedence. If a required environment variable
+  is missing, persona-review reads ${USER_KEYS_PATH}. On first lookup, an
+  empty keys.yaml is created if it does not exist.
+
 User defaults:
   On first run, persona-review creates ${defaultsPath}.
   Custom personas can be added as YAML files in ${USER_PERSONAS_DIR}.
@@ -468,9 +474,17 @@ async function main() {
   }
 
   const requiredKey = PROVIDER_ENV_VARS[opts.provider];
-  if (!process.env[requiredKey]) {
+  let apiKeyReady = false;
+  try {
+    apiKeyReady = Boolean(lookupApiKey(requiredKey).value);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`Error loading API key: ${msg}`);
+    process.exit(1);
+  }
+  if (!apiKeyReady) {
     console.error(
-      `Error: ${requiredKey} environment variable is required for --provider ${opts.provider}.`
+      `Error: ${requiredKey} is required for --provider ${opts.provider}. Set it as an environment variable or add it to ${USER_KEYS_PATH}.`
     );
     process.exit(1);
   }
@@ -690,9 +704,16 @@ function printStatus(defaultsPath: string, userDefaults: Partial<UserDefaults>) 
   console.log();
   for (const provider of PROVIDERS) {
     const envVar = PROVIDER_ENV_VARS[provider];
-    const ready = isEnvironmentVariableSet(envVar);
+    const lookup = lookupApiKey(envVar);
+    const ready = Boolean(lookup.value);
+    const source =
+      lookup.source === "environment"
+        ? "set in environment"
+        : lookup.source === "keys-file"
+          ? `set in ${lookup.filePath}`
+          : "missing";
     console.log(
-      `  ${provider}: ${ready ? "ready" : "not ready"} (${envVar} ${ready ? "set" : "missing"})`
+      `  ${provider}: ${ready ? "ready" : "not ready"} (${envVar} ${source})`
     );
   }
 
@@ -719,11 +740,6 @@ function printStatus(defaultsPath: string, userDefaults: Partial<UserDefaults>) 
   for (const item of describeDefaultSources(opts, userDefaults)) {
     console.log(`  ${item.name}: ${item.value} (${item.source})`);
   }
-}
-
-function isEnvironmentVariableSet(name: string): boolean {
-  const value = process.env[name];
-  return value !== undefined && value.trim().length > 0;
 }
 
 function describeDefaultSources(

@@ -237,25 +237,18 @@ export GEMINI_API_KEY=...
 npm run review -- https://example.org --provider google
 ```
 
-You can also store the API key in an `.env` file. First let's create the file with an editor:
+Environment variables take precedence, but you can also store API keys in
+`~/.persona-review/keys.yaml`. The file is created empty the first time
+persona-review looks for an API key and it does not already exist.
 
-```bash
-nano .env
+```yaml
+ANTHROPIC_API_KEY: sk-ant-...
+OPENAI_API_KEY: sk-...
+GEMINI_API_KEY: ...
 ```
 
-Put the API key with the  `export variable` sintax in the `.env` file and exit + save:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-```
-
-and then run:
-
-```bash
-source .env
-```
-
-Now this should work with both `npx persona-review` or `npm run review --`.
+Use the same key names as the environment variables. You only need to fill in
+the providers you use.
 
 The CLI reads only the key for the selected provider; nothing else leaves your
 machine except the HTTP request to the selected LLM provider and the page-load
@@ -268,8 +261,8 @@ defaults come from:
 npm run review -- --status
 ```
 
-This only checks whether each provider's environment variable exists; it
-does not print API key values.
+This checks whether each provider has a key in the environment or
+`~/.persona-review/keys.yaml`; it does not print API key values.
 
 **Model:** Anthropic defaults to `claude-sonnet-4-6`; OpenAI defaults to
 `gpt-5.4`; Google defaults to `gemini-3.1-pro-preview-customtools`. Override
@@ -313,9 +306,10 @@ npx persona-review --status
 ```
 
 Prints whether `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `GEMINI_API_KEY`
-are set, without showing their values. It also lists the model ids accepted by
-`--model` with built-in pricing, then shows every effective default and
-whether it came from the software or the user defaults file.
+are available from the environment or `~/.persona-review/keys.yaml`, without
+showing their values. It also lists the model ids accepted by `--model` with
+built-in pricing, then shows every effective default and whether it came from
+the software or the user defaults file.
 
 ### User defaults
 

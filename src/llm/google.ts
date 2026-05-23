@@ -1,3 +1,4 @@
+import { getRequiredApiKey } from "../keys.js";
 import type {
   ContentBlock,
   CreateModelResponseOptions,
@@ -14,11 +15,14 @@ export class GoogleGeminiClient implements ModelClient {
   public readonly provider = "google" as const;
   private readonly apiKey: string;
 
-  constructor(apiKey = process.env.GEMINI_API_KEY) {
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is required.");
+  constructor(apiKey = getRequiredApiKey("GEMINI_API_KEY")) {
+    const key = apiKey.trim();
+    if (!key) {
+      throw new Error(
+        "GEMINI_API_KEY is required. Set it as an environment variable or add it to ~/.persona-review/keys.yaml."
+      );
     }
-    this.apiKey = apiKey;
+    this.apiKey = key;
   }
 
   async createResponse(
