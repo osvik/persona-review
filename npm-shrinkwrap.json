@@ -10,12 +10,12 @@
       "license": "AGPL-3.0-only",
       "dependencies": {
         "@anthropic-ai/sdk": "0.40.1",
-        "ink": "^5.2.1",
-        "ink-select-input": "^6.2.0",
-        "ink-spinner": "^5.0.0",
-        "ink-text-input": "^6.0.0",
+        "ink": "5.2.1",
+        "ink-select-input": "6.2.0",
+        "ink-spinner": "5.0.0",
+        "ink-text-input": "6.0.0",
         "playwright": "1.59.1",
-        "react": "^18.3.1",
+        "react": "18.3.1",
         "yaml": "2.8.3",
         "zod": "3.25.76"
       },
@@ -75,9 +75,9 @@
       "license": "MIT"
     },
     "node_modules/@types/node": {
-      "version": "22.19.17",
-      "resolved": "https://registry.npmjs.org/@types/node/-/node-22.19.17.tgz",
-      "integrity": "sha512-wGdMcf+vPYM6jikpS/qhg6WiqSV/OhG+jeeHT/KlVqxYfD40iYJf9/AE1uQxVWFvU7MipKRkRv8NSHiCGgPr8Q==",
+      "version": "22.19.19",
+      "resolved": "https://registry.npmjs.org/@types/node/-/node-22.19.19.tgz",
+      "integrity": "sha512-dyh/xO2Fh5bYrfWaaqGrRQQGkNdmYw6AmaAUvYeUMNTWQtvb796ikLdmTchRmOlOiIJ1TDXfWgVx1QkUlQ6Hew==",
       "license": "MIT",
       "dependencies": {
         "undici-types": "~6.21.0"
