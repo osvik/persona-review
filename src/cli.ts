@@ -50,7 +50,8 @@ interface Args extends UserDefaults {
     | "status"
     | "help"
     | "version"
-    | "install-browsers";
+    | "install-browsers"
+    | "ui";
   url?: string;
 }
 
@@ -114,6 +115,8 @@ function parseArgs(argv: string[]): ParsedArgs {
       command = "install-browsers";
     } else if (a === "--status") {
       command = "status";
+    } else if (a === "--ui" || a === "--tui") {
+      command = "ui";
     } else if (a === "--list-personas") {
       command = "list-personas";
     } else if (a === "--json") {
@@ -463,6 +466,22 @@ async function main() {
 
   if (parsed.command === "status") {
     printStatus(defaultsPath, userDefaults);
+    return;
+  }
+
+  if (parsed.command === "ui") {
+    if (parsed.overrides.json) {
+      console.error("Error: --ui cannot be combined with --json.");
+      process.exit(1);
+    }
+    const { runTui } = await import("./tui/index.js");
+    try {
+      await runTui({ userDefaults });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`persona-review TUI failed: ${msg}`);
+      process.exit(1);
+    }
     return;
   }
 
