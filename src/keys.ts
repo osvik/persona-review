@@ -1,6 +1,6 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { parse as parseYaml } from "yaml";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { ensureUserConfigDirs, USER_CONFIG_DIR } from "./user-config.js";
 
 export const USER_KEYS_PATH = path.join(USER_CONFIG_DIR, "keys.yaml");
@@ -49,6 +49,48 @@ export function getRequiredApiKey(
   throw new Error(
     `${name} is required. Set it as an environment variable or add it to ${lookup.filePath}.`
   );
+}
+
+/**
+ * Write (or clear) an API key in `keys.yaml`. Preserves any other keys in
+ * the file and enforces mode 0o600. Passing an empty/whitespace value
+ * removes the entry. Throws on file or YAML errors; caller surfaces them.
+ *
+ * Note: round-tripping through `yaml.parse` + `yaml.stringify` normalizes
+ * comments and quoting. A user who hand-edited keys.yaml with comments
+ * will lose them on the next write.
+ */
+export function writeApiKey(
+  name: string,
+  value: string,
+  filePath: string = USER_KEYS_PATH
+): void {
+  ensureUserKeysFile(filePath);
+  const raw = readFileSync(filePath, "utf-8");
+  const parsed = parseYaml(raw);
+  let data: Record<string, unknown>;
+  if (parsed == null) {
+    data = {};
+  } else if (isPlainRecord(parsed)) {
+    data = { ...parsed };
+  } else {
+    throw new Error(`${filePath} must contain a YAML object.`);
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    delete data[name];
+  } else {
+    data[name] = trimmed;
+  }
+  const out = Object.keys(data).length === 0 ? "" : stringifyYaml(data);
+  writeFileSync(filePath, out, { mode: 0o600 });
+  // writeFileSync only sets mode when creating a new file; ensure 0o600
+  // even when overwriting an existing file with different mode.
+  try {
+    chmodSync(filePath, 0o600);
+  } catch {
+    /* best effort — non-POSIX filesystems may not support chmod */
+  }
 }
 
 function readKeyFromFile(name: string, filePath: string): unknown {

@@ -16,7 +16,9 @@ import { DEFAULT_PERSONA_ID } from "../persona.js";
 export type Screen =
   | "form"
   | "personas"
+  | "personaInspector"
   | "settings"
+  | "apiKeys"
   | "submitConsent"
   | "review"
   | "repl"
@@ -55,6 +57,7 @@ export interface State {
   allowCrossPageNavigation: boolean;
   submitDataPath: string | undefined;
   submitData: SubmitData | null;
+  inspectingPersonaId: string | null;
   personas: Persona[];
   conv: PersonaConversation | null;
   statusLog: string[];
@@ -85,7 +88,11 @@ export type Action =
   | { type: "SET_SUBMIT_DATA"; data: SubmitData | null }
   | { type: "SET_COST_CAP"; value: number }
   | { type: "SET_MAX_ACTIONS"; value: number }
-  | { type: "SET_MAX_TOKENS"; value: number };
+  | { type: "SET_MAX_TOKENS"; value: number }
+  | { type: "SET_PROVIDER"; provider: Provider }
+  | { type: "SET_MODEL"; model: string | undefined }
+  | { type: "TOGGLE_FULL_PAGE" }
+  | { type: "OPEN_PERSONA_INSPECTOR"; personaId: string };
 
 const STATUS_LOG_CAP = 200;
 
@@ -110,6 +117,7 @@ export function initialState(
     allowCrossPageNavigation: userDefaults.allowCrossPageNavigation ?? false,
     submitDataPath: userDefaults.submitDataPath,
     submitData: null,
+    inspectingPersonaId: null,
     personas,
     conv: null,
     statusLog: [],
@@ -183,5 +191,20 @@ export function reducer(state: State, action: Action): State {
       return { ...state, maxActions: action.value };
     case "SET_MAX_TOKENS":
       return { ...state, maxOutputTokens: action.value };
+    case "SET_PROVIDER":
+      // Switching provider also resets model so the new provider's
+      // defaultModelForProvider() kicks in. User re-picks if needed.
+      return { ...state, provider: action.provider, model: undefined };
+    case "SET_MODEL":
+      return { ...state, model: action.model };
+    case "TOGGLE_FULL_PAGE":
+      return { ...state, fullPage: !state.fullPage };
+    case "OPEN_PERSONA_INSPECTOR":
+      return {
+        ...state,
+        inspectingPersonaId: action.personaId,
+        screen: "personaInspector",
+        error: null,
+      };
   }
 }

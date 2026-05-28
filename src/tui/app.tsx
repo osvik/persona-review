@@ -4,12 +4,16 @@ import {
   closeConversation,
   openConversation,
   runReviewLoop,
+  PROVIDER_ENV_VARS,
   type PersonaConversation,
 } from "../agent.js";
+import { lookupApiKey } from "../keys.js";
 import { reducer, type State } from "./state.js";
 import { FormScreen } from "./screens/form.js";
 import { PersonaListScreen } from "./screens/personaList.js";
+import { PersonaInspectorScreen } from "./screens/personaInspector.js";
 import { SettingsScreen } from "./screens/settings.js";
+import { ApiKeysScreen } from "./screens/apiKeys.js";
 import { SubmitConsentScreen } from "./screens/submitConsent.js";
 import { ReviewScreen } from "./screens/review.js";
 import { ReplScreen } from "./screens/repl.js";
@@ -56,6 +60,21 @@ export function App({ initial, onConvChange }: Props) {
       return () => clearTimeout(t);
     }
   }, [state.screen, exit]);
+
+  // Refresh state.apiKey whenever the provider changes (Phase 3 picker).
+  useEffect(() => {
+    const envVar = PROVIDER_ENV_VARS[state.provider];
+    const lk = lookupApiKey(envVar);
+    dispatch({
+      type: "SET_API_KEY",
+      apiKey: {
+        ready: Boolean(lk.value),
+        envVar: lk.name,
+        source: lk.source,
+        filePath: lk.filePath,
+      },
+    });
+  }, [state.provider]);
 
   // Drive the review pipeline when navigating to "review".
   useEffect(() => {
@@ -128,8 +147,14 @@ export function App({ initial, onConvChange }: Props) {
       {state.screen === "personas" && (
         <PersonaListScreen state={state} dispatch={dispatch} />
       )}
+      {state.screen === "personaInspector" && (
+        <PersonaInspectorScreen state={state} dispatch={dispatch} />
+      )}
       {state.screen === "settings" && (
         <SettingsScreen state={state} dispatch={dispatch} />
+      )}
+      {state.screen === "apiKeys" && (
+        <ApiKeysScreen state={state} dispatch={dispatch} />
       )}
       {state.screen === "submitConsent" && (
         <SubmitConsentScreen state={state} dispatch={dispatch} />

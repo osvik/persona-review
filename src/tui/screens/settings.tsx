@@ -5,7 +5,12 @@ import SelectInput from "ink-select-input";
 import type { State, Action } from "../state.js";
 import { colors } from "../theme.js";
 import { KeyHint } from "../components/KeyHint.js";
-import { formatUsd } from "../../cost.js";
+import { availableModelsFor, formatUsd } from "../../cost.js";
+import {
+  defaultModelForProvider,
+  PROVIDER_ENV_VARS,
+} from "../../agent.js";
+import { lookupApiKey } from "../../keys.js";
 import {
   isSubmitDataYamlPath,
   loadSubmitData,
@@ -14,11 +19,16 @@ import {
   parsePositiveInteger,
   parsePositiveNumber,
 } from "../validate.js";
+import type { Provider } from "../../llm/types.js";
 
 type MenuValue =
+  | "provider"
+  | "model"
+  | "manageKeys"
   | "submit"
   | "downloads"
   | "crossPageNav"
+  | "fullPage"
   | "submitData"
   | "costCap"
   | "maxActions"
@@ -26,10 +36,14 @@ type MenuValue =
 
 type Mode =
   | { kind: "menu" }
+  | { kind: "edit-provider" }
+  | { kind: "edit-model" }
   | { kind: "edit-cost-cap"; draft: string }
   | { kind: "edit-max-actions"; draft: string }
   | { kind: "edit-max-tokens"; draft: string }
   | { kind: "edit-submit-data"; draft: string };
+
+const PROVIDERS: Provider[] = ["anthropic", "openai", "google"];
 
 interface Props {
   state: State;
@@ -44,7 +58,12 @@ export function SettingsScreen({ state, dispatch }: Props) {
   // it doesn't fight TextInput typing.
   useInput((input, key) => {
     if (key.escape) {
-      dispatch({ type: "NAVIGATE", screen: "form" });
+      if (mode.kind === "menu") {
+        dispatch({ type: "NAVIGATE", screen: "form" });
+      } else {
+        setMode({ kind: "menu" });
+        setError(null);
+      }
       return;
     }
     if (mode.kind === "menu" && input === "q") {
@@ -52,14 +71,33 @@ export function SettingsScreen({ state, dispatch }: Props) {
     }
   });
 
+  if (mode.kind === "edit-provider") {
+    return (
+      <ProviderEditor
+        state={state}
+        dispatch={dispatch}
+        onDone={() => setMode({ kind: "menu" })}
+      />
+    );
+  }
+
+  if (mode.kind === "edit-model") {
+    return (
+      <ModelEditor
+        state={state}
+        dispatch={dispatch}
+        onDone={() => setMode({ kind: "menu" })}
+      />
+    );
+  }
+
   if (mode.kind !== "menu") {
     return (
-      <EditScreen
+      <TextEditScreen
         mode={mode}
         setMode={setMode}
         error={error}
         setError={setError}
-        state={state}
         dispatch={dispatch}
       />
     );
@@ -71,8 +109,34 @@ export function SettingsScreen({ state, dispatch }: Props) {
   const submitDataLabel = state.submitDataPath
     ? state.submitDataPath
     : "(bundled submit-data.yaml)";
+  const modelLabel = state.model
+    ? state.model
+    : `(default — ${defaultModelForProvider(state.provider)})`;
+
+  // Recompute per render so changes from the apiKeys screen show up.
+  let setCount = 0;
+  for (const p of PROVIDERS) {
+    if (lookupApiKey(PROVIDER_ENV_VARS[p]).value) setCount++;
+  }
+  const missingCount = PROVIDERS.length - setCount;
+  const keysLabel = `(${setCount} set, ${missingCount} missing)`;
 
   const menuItems: { key: string; label: string; value: MenuValue }[] = [
+    {
+      key: "provider",
+      label: `${label("Provider")}${state.provider}`,
+      value: "provider",
+    },
+    {
+      key: "model",
+      label: `${label("Model")}${modelLabel}`,
+      value: "model",
+    },
+    {
+      key: "manageKeys",
+      label: `${label("Manage API keys…")}${keysLabel}`,
+      value: "manageKeys",
+    },
     {
       key: "submit",
       label: `${label("Submit forms")}${onOff(state.allowSubmit)}`,
@@ -87,6 +151,11 @@ export function SettingsScreen({ state, dispatch }: Props) {
       key: "crossPageNav",
       label: `${label("Cross-page nav")}${onOff(state.allowCrossPageNavigation)}`,
       value: "crossPageNav",
+    },
+    {
+      key: "fullPage",
+      label: `${label("Full-page snapshot")}${onOff(state.fullPage)}`,
+      value: "fullPage",
     },
     {
       key: "submitData",
@@ -113,6 +182,15 @@ export function SettingsScreen({ state, dispatch }: Props) {
   const handleSelect = (v: MenuValue) => {
     setError(null);
     switch (v) {
+      case "provider":
+        setMode({ kind: "edit-provider" });
+        return;
+      case "model":
+        setMode({ kind: "edit-model" });
+        return;
+      case "manageKeys":
+        dispatch({ type: "NAVIGATE", screen: "apiKeys" });
+        return;
       case "submit":
         dispatch({ type: "TOGGLE_ALLOW_SUBMIT" });
         return;
@@ -121,6 +199,9 @@ export function SettingsScreen({ state, dispatch }: Props) {
         return;
       case "crossPageNav":
         dispatch({ type: "TOGGLE_ALLOW_CROSS_PAGE_NAVIGATION" });
+        return;
+      case "fullPage":
+        dispatch({ type: "TOGGLE_FULL_PAGE" });
         return;
       case "submitData":
         setMode({
@@ -169,22 +250,119 @@ export function SettingsScreen({ state, dispatch }: Props) {
   );
 }
 
-interface EditProps {
-  mode: Exclude<Mode, { kind: "menu" }>;
+// --- Provider sub-mode -----------------------------------------------------
+
+interface SubEditorProps {
+  state: State;
+  dispatch: React.Dispatch<Action>;
+  onDone: () => void;
+}
+
+function ProviderEditor({ state, dispatch, onDone }: SubEditorProps) {
+  const items = PROVIDERS.map((p) => {
+    const envVar = PROVIDER_ENV_VARS[p];
+    const ready = Boolean(lookupApiKey(envVar).value);
+    const status = ready ? "set" : "missing";
+    return {
+      key: p,
+      label: `${p.padEnd(12, " ")}(${envVar} ${status})`,
+      value: p,
+    };
+  });
+  const initialIndex = Math.max(
+    0,
+    PROVIDERS.findIndex((p) => p === state.provider)
+  );
+
+  return (
+    <Box flexDirection="column">
+      <Header />
+      <Box marginTop={1}>
+        <Text bold>Choose provider:</Text>
+      </Box>
+      <SelectInput<Provider>
+        items={items}
+        initialIndex={initialIndex}
+        onSelect={(item) => {
+          if (item.value !== state.provider) {
+            dispatch({ type: "SET_PROVIDER", provider: item.value });
+          }
+          onDone();
+        }}
+      />
+      <KeyHint hints={["↑↓ navigate", "Enter select", "Esc cancel"]} />
+    </Box>
+  );
+}
+
+// --- Model sub-mode --------------------------------------------------------
+
+function ModelEditor({ state, dispatch, onDone }: SubEditorProps) {
+  const def = defaultModelForProvider(state.provider);
+  const priced = availableModelsFor(state.provider);
+  type ModelValue = string;
+  const useDefaultValue = "__use_default__";
+  const items: { key: string; label: string; value: ModelValue }[] = [
+    {
+      key: useDefaultValue,
+      label: `(use default — ${def})`,
+      value: useDefaultValue,
+    },
+    ...priced.map((m) => ({
+      key: m,
+      label: m === def ? `${m}  (default)` : m,
+      value: m,
+    })),
+  ];
+  const currentIndex = state.model
+    ? items.findIndex((i) => i.value === state.model)
+    : 0;
+  const initialIndex = currentIndex >= 0 ? currentIndex : 0;
+
+  return (
+    <Box flexDirection="column">
+      <Header />
+      <Box marginTop={1}>
+        <Text bold>
+          Choose model for <Text color={colors.accent}>{state.provider}</Text>:
+        </Text>
+      </Box>
+      <SelectInput<ModelValue>
+        items={items}
+        initialIndex={initialIndex}
+        onSelect={(item) => {
+          dispatch({
+            type: "SET_MODEL",
+            model: item.value === useDefaultValue ? undefined : item.value,
+          });
+          onDone();
+        }}
+      />
+      <KeyHint hints={["↑↓ navigate", "Enter select", "Esc cancel"]} />
+    </Box>
+  );
+}
+
+// --- Text-based editors (numeric + submit-data) ---------------------------
+
+interface TextEditProps {
+  mode: Exclude<
+    Mode,
+    { kind: "menu" } | { kind: "edit-provider" } | { kind: "edit-model" }
+  >;
   setMode: (m: Mode) => void;
   error: string | null;
   setError: (e: string | null) => void;
-  state: State;
   dispatch: React.Dispatch<Action>;
 }
 
-function EditScreen({
+function TextEditScreen({
   mode,
   setMode,
   error,
   setError,
   dispatch,
-}: EditProps) {
+}: TextEditProps) {
   const [draft, setDraft] = useState(mode.draft);
 
   const updateDraft = (next: string) => {

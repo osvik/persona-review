@@ -2,8 +2,8 @@
 
 ## Status
 
-**Phase 1 and Phase 2 shipped.** Launch with `npx persona-review --ui`
-or `npm run review -- --ui`.
+**All three planned phases shipped.** Launch with
+`npx persona-review --ui` or `npm run review -- --ui`.
 
 Phase 1 covers original priorities 1–5:
 
@@ -26,7 +26,23 @@ consent flow):
 11. Edit max actions per phase (positive integer).
 12. Edit max output tokens (positive integer).
 
-Phase 3 is **not started** — see roadmap below.
+Phase 3 covers original priorities 13–17 (provider/model picker, in-TUI
+API-key editor, full-page snapshot toggle, persona YAML inspector):
+
+13. Pick LLM provider (anthropic / openai / google); resets the model
+    to the new provider's default.
+14. Pick model from the priced list (`availableModelsFor(provider)`),
+    with `(default)` marker.
+15. Add / edit / clear API keys via a masked editor (Tab peek). Writes
+    to `~/.persona-review/keys.yaml` at mode 0o600.
+16. Full-page snapshot toggle in Settings.
+17. Inspect any persona's raw YAML from the persona list (Enter on a
+    row), with arrow / PgUp / PgDn / `g` / `G` scrolling.
+
+Original priority 18 (action / error log viewer) is **deferred** — the
+current pipeline doesn't write logs to `~/.persona-review/`. The
+log-writing story (where? rotation? format?) needs to be decided
+before a viewer makes sense. See "Phase 4 (if any)" below.
 
 ## Constraints (from the original brief)
 
@@ -46,9 +62,16 @@ Phase 3 is **not started** — see roadmap below.
 ## Architecture
 
 Self-contained `src/tui/` module loaded by `src/cli.ts` via dynamic
-`import()` when `--ui` is passed. No changes to `agent.ts`, `browser.ts`,
-`cost.ts`, `persona.ts`, `defaults.ts`, `keys.ts`, or `review.ts`. The TUI
-is a pure consumer of their existing exports.
+`import()` when `--ui` is passed. The TUI is a pure consumer of the
+existing pipeline's exports, with two thin additions in Phase 3:
+
+- `src/keys.ts` gained `writeApiKey()` (writes to `keys.yaml` with
+  0o600, round-trips other entries, deletes on empty value).
+- `src/persona.ts` gained `findPersonaSource()` (returns the raw YAML
+  + path for a persona id, used by the inspector).
+
+No changes to `agent.ts`, `browser.ts`, `cost.ts`, `defaults.ts`,
+or `review.ts`.
 
 CLI surface added (≈20 lines in `src/cli.ts`):
 
@@ -66,7 +89,10 @@ CLI surface added (≈20 lines in `src/cli.ts`):
 - `app.tsx` — top-level component. Holds the reducer; routes by
   `state.screen`; owns the review-pipeline `useEffect` keyed on screen
   transition; global Ctrl-C handler via `useApp().exit()`. Mirrors
-  `state.conv` into a ref so the unmount cleanup can close it.
+  `state.conv` into a ref so the unmount cleanup can close it. Phase 3
+  added a second `useEffect` keyed on `state.provider` that re-runs
+  `lookupApiKey()` and dispatches `SET_API_KEY` so the form banner
+  refreshes when the user switches provider.
 - `state.ts` — `State`, `Action`, `reducer`, `initialState()`. Status
   log capped at 200 entries (sliced in reducer).
 - `theme.ts` — safe color constants. Cyan accent, green success, red
@@ -78,17 +104,39 @@ CLI surface added (≈20 lines in `src/cli.ts`):
   allow-downloads / allow-cross-page-navigation is on. `handleRun()`
   parses submit-data and routes to `submitConsent` when `allowSubmit`.
   Hotkeys: `p` persona list, `s` settings.
-- `screens/personaList.tsx` — paged browse, 4 per page, with role,
-  device, tech, engagement, scrutiny, reading, accessibility. `← →`
-  paging; `q` / `Esc` back to form.
-- `screens/settings.tsx` (Phase 2) — 7-row `SelectInput` menu. Rows 1–3
-  flip toggles on Enter (allow-submit, allow-downloads, allow-cross-page
-  -navigation). Row 4 (submit-data file path) opens an inline TextInput
-  validated with `isSubmitDataYamlPath` + `loadSubmitData` on save —
-  empty path means "use bundled submit-data.yaml". Rows 5–7 (cost cap,
-  max actions, max tokens) open numeric TextInputs validated with the
-  helpers in `validate.ts`. Esc / q returns to form. Settings are
-  session-only — no writes to `defaults.yaml`.
+- `screens/personaList.tsx` — cursor-based `SelectInput` over the 12
+  personas; each row is `id — name — role`. Enter dispatches
+  `OPEN_PERSONA_INSPECTOR`; `q` / `Esc` back to form. Phase 1's paged
+  detail view was replaced by the inspector in Phase 3.
+- `screens/personaInspector.tsx` (Phase 3) — async-loads via
+  `findPersonaSource()`. Header: `<id> — <name>` + role + either
+  `built-in` or `custom — <path>`. Body: raw YAML lines, paged at 18
+  per screen. Input: ↑↓ scroll one line, PgUp/PgDn page, `g` / `G`
+  jump top/bottom, `q` / `Esc` back to persona list.
+- `screens/settings.tsx` (Phase 2 + 3) — 11-row `SelectInput` menu.
+  Rows 1–3 (Phase 3): Provider (sub-mode SelectInput with key status
+  per provider), Model (sub-mode SelectInput with priced list and
+  `(default)` marker; top row is `(use default — X)`), Manage API
+  keys → navigates to `apiKeys` screen. Rows 4–7 are toggles
+  (allow-submit, allow-downloads, allow-cross-page-navigation,
+  full-page-snapshot — last one Phase 3); flip on Enter. Row 8
+  (submit-data file path) opens an inline TextInput validated with
+  `isSubmitDataYamlPath` + `loadSubmitData` on save — empty path
+  means "use bundled". Rows 9–11 (cost cap, max actions, max tokens)
+  open numeric TextInputs validated with `validate.ts`. Esc / q
+  returns to form. Settings are session-only — no writes to
+  `defaults.yaml`. API keys (managed via the `apiKeys` screen) are
+  the only Phase 1–3 setting that persists.
+- `screens/apiKeys.tsx` (Phase 3) — three rows (per provider) showing
+  `set (source, last 4: …xxxx)` or `missing`. `source` is `env`,
+  `keys.yaml`, or `missing`. Enter opens an inline masked editor
+  (`mask="*"`). **Tab** (not a letter — letters get captured by
+  `ink-text-input`) toggles peek. Enter with a value calls
+  `writeApiKey()`; Enter with empty input clears the entry; Esc
+  cancels. If the edited key matches `state.provider`, also
+  dispatches `SET_API_KEY` so the form banner refreshes immediately.
+  Warns when the current source is `environment` (env vars override
+  file writes).
 - `screens/submitConsent.tsx` (Phase 2) — port of `cli.ts:582-633`.
   Renders target URL, persona, source path, and `describeSubmitData()`
   identity block, then a `SelectInput` with "No, cancel" first and
@@ -126,6 +174,9 @@ CLI surface added (≈20 lines in `src/cli.ts`):
 | `formatUsd()` | `src/cost.ts:179` |
 | `PROVIDER_ENV_VARS` | `src/agent.ts:48` |
 | `loadSubmitData()` / `isSubmitDataYamlPath()` / `describeSubmitData()` / `SubmitData` (Phase 2) | `src/submit-data.ts` |
+| `writeApiKey()` (Phase 3 — new helper next to `lookupApiKey`) | `src/keys.ts` |
+| `findPersonaSource()` / `PersonaSource` (Phase 3 — new helper) | `src/persona.ts` |
+| `availableModelsFor()` / `defaultModelForProvider()` (Phase 3) | `src/cost.ts:82`, `src/agent.ts:54` |
 
 ### Dependencies added
 
@@ -197,25 +248,102 @@ are picked up.
    cancel" does NOT flip the toggle off. Matches CLI per-run semantics.
    User flips it off in Settings if they didn't mean it.
 
-## Phase 3 (later)
+## Phase 3 (shipped) — provider/model picker, API-key editor, full-page snapshot, persona inspector
 
-Covers original priorities 13–17:
+Original priorities 13–17 are live. Full file-by-file detail is in the
+Architecture section above. This section is the design-decision log so
+future-me doesn't relitigate choices.
 
-- 13. Pick provider. On change, re-run `lookupApiKey(PROVIDER_ENV_VARS[provider])`
-  and update `state.apiKey`.
-- 14. Pick model. Use `availableModelsFor(provider)` from `src/cost.ts`;
-  default to `defaultModelForProvider(provider)` from `src/agent.ts`.
-- 15. Add / edit API keys. Add a new helper `writeApiKey(envVar, value)`
-  next to `lookupApiKey` in `src/keys.ts`. Preserve the existing 0o600
-  file mode (`ensureUserKeysFile`).
-- 16. Full-page snapshot toggle.
-- 17. Inspect persona YAML. Re-read from `BUILTIN_PERSONAS_DIR` and
-  `USER_PERSONAS_DIR` (both exported from `src/persona.ts`) and show
-  the raw YAML in a scroll view.
+### Design decisions (locked)
 
-Original priority 18 (action / error log viewer) is **deferred** — the
-current pipeline doesn't write logs to `~/.persona-review/`. Decide the
-log-writing story (where? rotation? format?) before adding a viewer.
+- **API key entry is masked with a peek toggle.** TextInput uses
+  `mask="*"`; pressing **Tab** swaps to the unmasked view. The API
+  keys menu shows status only — `set (source, last 4: …a7b3)` or
+  `missing` — never the full value.
+- **The peek hotkey is Tab, not a printable letter.** During Phase 3
+  implementation, a `v` peek was tried first but `ink-text-input`
+  captures `v` and appends it to the draft, so the keystroke double-
+  fired. Tab works because `ink-text-input` doesn't add it to the
+  value. Same pattern applies for any future "secondary action while
+  TextInput is focused" — bind to a key that lives on `key.<flag>`,
+  not the `input` string.
+- **Model picker is hard-restricted to the priced list** from
+  `availableModelsFor(provider)` in `src/cost.ts`. No "type custom"
+  escape hatch. Adding a new model means a PR to `src/cost.ts` first.
+  CLI users still have `--model <id>` for ad-hoc experiments.
+- **Persona inspector is read-only.** Raw YAML with simple arrow /
+  PgUp / PgDn / `g` / `G` scroll. No `$EDITOR` shell-out, no in-TUI
+  YAML editor.
+- **Provider change resets `state.model = undefined`** so the new
+  provider's `defaultModelForProvider()` kicks in. Users who want a
+  specific model re-pick it after switching. Avoids carrying an
+  Anthropic model id over to OpenAI/Google by mistake.
+- **API-key writes are persistent.** They go to
+  `~/.persona-review/keys.yaml` via `writeApiKey()` at mode 0o600.
+  Other keys in the file round-trip cleanly. This is the only TUI
+  setting that persists across sessions — everything else stays
+  session-only.
+
+### State additions (`src/tui/state.ts`)
+
+```
+inspectingPersonaId: string | null   // which persona's YAML to show
+```
+
+`Screen` gained `"apiKeys"` and `"personaInspector"`. Four new
+actions: `SET_PROVIDER` (also resets `model`), `SET_MODEL`,
+`TOGGLE_FULL_PAGE`, `OPEN_PERSONA_INSPECTOR`.
+
+### Known UX nuances (not bugs)
+
+1. **`v` would not work as a peek hotkey.** See above. `ink-text-input`
+   inserts any printable character into the draft; the only way to
+   bind a secondary action is via a special key (Tab, PgUp/Dn, F-keys,
+   escape, ctrl+letter). Tab is what we shipped.
+2. **Peek surfaces the key in terminal scrollback.** A user who
+   pressed Tab during edit will leave the full value in the terminal
+   buffer (and potentially in screen-sharing capture). Documented;
+   user takes responsibility.
+3. **`writeApiKey` clobbers comments and key order.** Round-tripping
+   via `yaml.parse` + `yaml.stringify` normalizes formatting. A user
+   who hand-edited `keys.yaml` with comments will lose them on the
+   next TUI save. Acceptable for a credentials file.
+4. **Env vars still override file writes.** If a key is set via env
+   and the user writes a different value through the TUI, the env
+   value still wins at next `lookupApiKey()`. The editor warns about
+   this in bold magenta before saving.
+5. **Inspector scrolling caps at 18 lines per page.** Hard-coded
+   `PAGE_SIZE` in `personaInspector.tsx`. The built-in personas are
+   30–60 lines so this is enough to see a full persona in 2–3 pages.
+   Very long custom personas could feel cramped; revisit if it comes
+   up.
+
+## Phase 4 (if any) — log viewer
+
+Original priority 18 (action / error log viewer) is the only roadmap
+item left, and it's still deferred. The current pipeline doesn't
+write logs anywhere — adding a viewer first means deciding the
+log-writing story:
+
+- **Where to write?** Likely `~/.persona-review/runs/<timestamp>.log`.
+- **What to write?** At minimum the persona id, URL, status callback
+  messages, final feedback (or error), cost line, model usage.
+- **Rotation?** Keep last N runs, prune older?
+- **Format?** JSONL (machine-readable) or plain text (human-readable)?
+
+These need user input before any coding. When/if Phase 4 starts:
+- Add log writing to `agent.ts` (probably in `runReviewLoop` /
+  `runFollowUpTurn` / `openConversation`) gated behind a config option
+  so users who don't want disk writes can opt out.
+- Add a TUI screen `screens/logs.tsx` listing past runs with date,
+  URL, persona, cost, status (success / error / cost-cap-hit).
+- Enter on a row opens a viewer (similar to the persona inspector but
+  for log content).
+
+The Phase 1–3 architecture supports this cleanly: add a `logs` screen
+to the `Screen` union, a `Browse run logs` row in Settings (or a `l`
+hotkey on the form), and a new file under `src/tui/screens/`. No
+state restructuring needed.
 
 ## Known risks / limitations
 
@@ -273,6 +401,34 @@ Phase 2:
   `describeSubmitData()` (incl. custom YAML fields).
 - [x] "No, cancel" returns to form; submit toggle preserved.
 
+Phase 3:
+
+- [x] Settings menu shows all 11 rows in the planned order (Provider,
+  Model, Manage API keys, four toggles, submit-data path, three
+  numeric editors).
+- [x] Provider sub-mode renders 3 rows with `set`/`missing` annotations;
+  selecting a different provider returns to Settings, model auto-resets
+  to that provider's default, and the form's API-key banner refreshes
+  accordingly (verified via the `useEffect` keyed on `state.provider`).
+- [x] Model sub-mode lists priced models with `(default)` marker; first
+  row is `(use default — X)` which maps to `model: undefined`.
+- [x] Manage API keys → apiKeys screen with all 3 providers.
+- [x] Writing a key: masked TextInput → save → `~/.persona-review/keys.yaml`
+  created with mode **0o600** containing `ANTHROPIC_API_KEY: sk-…`.
+  UI flashes "Saved …" and menu re-renders with
+  `set (keys.yaml, last 4: …xxxx)`.
+- [x] **Tab** peek toggles mask without contaminating the draft
+  (initial `v` attempt was rejected — `ink-text-input` captures the
+  letter and adds it to the value).
+- [x] Empty submit clears the key — file becomes empty, UI flashes
+  "Cleared …", menu re-renders with `missing`.
+- [x] Full-page snapshot toggle flips `off → on` in place.
+- [x] Persona list is cursor-based (`id — name — role` per row);
+  Enter opens inspector.
+- [x] Inspector renders raw YAML with header `<id> — <name>` + role +
+  `built-in` or `custom — <path>`; lines window starts at `1–18 of N`.
+- [x] PgDn advances the window; `G` jumps to bottom; `g` jumps to top.
+
 ### Pending (manual, requires a real API key + Chromium)
 
 Phase 1:
@@ -300,63 +456,58 @@ Phase 2:
 - [ ] `allowCrossPageNavigation=true` + a same-tab link click →
   navigation succeeds.
 
+Phase 3:
+
+- [ ] Picking a different provider and running a review uses the
+  newly-selected provider/model end to end (status log shows
+  `<persona> (…, <provider>/<model>) is loading …`).
+- [ ] Full-page snapshot on + a tall page → `agent.ts` requests the
+  full-page screenshot (`screenshotBytes` larger than the viewport-only
+  case; visible in the status line).
+- [ ] Editing a custom persona file under `~/.persona-review/personas/`
+  between sessions → inspector header shows `custom — <path>`.
+
 ## Continuation notes
 
-When picking this up next time, Phase 3 is the next stop. Before
-coding, plan with the user the same way Phase 2 was planned (one
-clarifying-question round, then a written-up plan).
+**Phases 1–3 are shipped.** All original priorities except #18 (action
+/ error log viewer) are live in the TUI. The only roadmap item left is
+the log viewer, which is sketched in the "Phase 4 (if any)" section
+above. It can't start until the user decides on the log-writing story
+(see the questions there).
 
-**Phase 3 scope (priorities 13–17):** provider picker, model picker, in-
-TUI API-key editor, full-page snapshot toggle, persona YAML inspector.
-Priority 18 (log viewer) stays deferred until log writing is decided.
+**If the user invokes "start Phase 4"**, ask the four log-writing
+questions first (where to write, what to write, rotation policy,
+format), then write a `Phase 4 (planned)` section the same way Phase 2
+and Phase 3 plans were written. The Architecture is set up for it: add
+a `logs` screen to the `Screen` union, a new file under
+`src/tui/screens/`, and a "Browse run logs" entry in Settings.
 
-**Likely clarifying questions to ask the user before Phase 3:**
-
-1. **API-key writer security.** Writing to `~/.persona-review/keys.yaml`
-   means handling a secret on screen. Should the TUI mask the key field
-   while typing (ink-text-input supports `mask="*"`)? Should keys ever
-   be displayed in the UI for editing, or only "add" / "replace"?
-2. **Model picker scope.** `availableModelsFor(provider)` returns only
-   models with a pricing entry in `src/cost.ts`. Should the picker allow
-   typing a custom model id (advanced users) or hard-restrict to the
-   priced list?
-3. **Persona inspector — read-only or editable?** Read-only is much
-   simpler. Editing custom personas under `~/.persona-review/personas/`
-   would need a YAML round-trip and schema validation; probably scope it
-   out of Phase 3.
-
-**Sketch of where things plug in:**
-
-- `lookupApiKey` lives at `src/keys.ts:25`. The Phase 3 writer should
-  sit next to it as `writeApiKey(envVar, value, filePath?)`, preserve
-  `ensureUserKeysFile()`'s 0o600 mode (`src/keys.ts:17`), and parse the
-  existing YAML so we don't clobber other keys. The TUI should call it
-  and then re-run `lookupApiKey` to refresh `state.apiKey`.
-- `availableModelsFor(provider)` is at `src/cost.ts:82`,
-  `defaultModelForProvider(provider)` at `src/agent.ts:54`. Plug into
-  Settings rows analogous to Phase 2's pattern.
-- `full_page` toggle is already a `state.fullPage` field; just add a row
-  in `settings.tsx` and a `TOGGLE_FULL_PAGE` action.
-- For the persona inspector: `BUILTIN_PERSONAS_DIR` and
-  `USER_PERSONAS_DIR` are exported from `src/persona.ts` and
-  `src/user-config.ts`. The TUI already has all 12 personas in
-  `state.personas`; the inspector just needs to read the raw YAML file
-  given the id. The path resolver pattern is in `loadPersonasInDir` at
-  `src/persona.ts:75`.
-
-**Design plans for completed phases** (reference if needed):
+**Design plans for completed phases** (reference only):
 
 - `/Users/osvaldogago/.claude/plans/hi-please-look-at-rosy-dragonfly.md`
   — Phase 1 original plan.
-- Phase 2 plan lived in the chat session that shipped it; the
-  "Phase 2 (shipped)" section above captures the locked decisions and
-  UX nuances worth remembering.
+- Phase 2 and Phase 3 plans lived in the chat sessions that shipped
+  them; the "Phase 2 (shipped)" and "Phase 3 (shipped)" sections above
+  capture the locked decisions and UX nuances worth remembering.
 
-**Don't re-litigate these settled choices** (they apply to Phase 3 too):
+**Settled choices that apply to any future phase:**
 
-- Session-only changes — don't add writes to `defaults.yaml` unless the
-  user explicitly asks.
+- Session-only changes for everything except secrets — don't add writes
+  to `defaults.yaml` unless the user explicitly asks. (API keys persist
+  via `writeApiKey()` to `~/.persona-review/keys.yaml` because a TUI
+  without a key writer is incomplete; other settings would just be
+  convenience.)
 - Toggles flip on Enter, no sub-screen.
+- Sub-modes (provider, model, persona pickers) use Ink's `SelectInput`
+  inline inside the parent screen — not a separate top-level screen.
 - Light/dark-safe colors from `theme.ts`; never set a background.
-- Runtime deps in `package.json` are exact-pinned (no `^`/`~`) for
-  supply-chain hygiene. devDeps stay on caret.
+- Secondary actions while a `TextInput` is focused must bind to a
+  non-printable key (Tab, PgUp/Dn, escape, ctrl+letter). Printable
+  letters get captured by `ink-text-input` and appended to the draft.
+- Runtime deps in `package.json` are exact-pinned (no `^` / `~`) for
+  supply-chain hygiene. devDeps stay on caret. New runtime deps need
+  exact pins + `npm shrinkwrap` regeneration.
+- Keep `AGENTS.md` from growing unbounded: when a phase ships, its
+  detailed walkthrough should move into Architecture (`src/tui/`
+  layout) and the phase section collapses to just the design-decision
+  log and any UX nuances.

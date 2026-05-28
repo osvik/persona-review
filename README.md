@@ -99,7 +99,7 @@ Entry points planned:
 | Entry point | Status | How to run |
 |---|---|---|
 | **CLI** (`persona-review`) | ✅ done | `npx persona-review <url>` or `npm run review -- <url>` |
-| **TUI** (`persona-review --ui`) | ✅ Phase 1 + 2 | `npx persona-review --ui` or `npm run review -- --ui` |
+| **TUI** (`persona-review --ui`) | ✅ Phase 1 + 2 + 3 | `npx persona-review --ui` or `npm run review -- --ui` |
 | **MCP server** (`persona-review-mcp`) | TBD | Mounts into Claude Code / Codex / Gemini CLI as a tool |
 
 ---
@@ -674,13 +674,27 @@ Inside the TUI:
   press `q`) to leave.
 - `Ctrl-C` quits cleanly and closes the browser session.
 
-The Settings screen lets you, for the current session, toggle form
-submission (with a consent screen), browser downloads, and cross-page
-navigation; pick a custom submit-data file; and edit the cost cap, max
-actions per phase, and max output tokens. Settings are session-only —
-edit `~/.persona-review/defaults.yaml` to make them stick. When any of
-submit / downloads / cross-page navigation is on, the main form shows a
-warning line so you can't miss it.
+The Settings screen lets you, for the current session, pick the LLM
+provider and model, manage your API keys, toggle form submission (with
+a consent screen) / browser downloads / cross-page navigation / full-
+page snapshot, pick a custom submit-data file, and edit the cost cap,
+max actions per phase, and max output tokens. Most settings are
+session-only — edit `~/.persona-review/defaults.yaml` to make them
+stick. The exception is API keys: when you edit one from the TUI,
+it's written to `~/.persona-review/keys.yaml` (mode 0o600) so it
+persists across sessions. When any of submit / downloads / cross-page
+navigation is on, the main form shows a warning line so you can't
+miss it.
+
+The API keys screen shows the status of `ANTHROPIC_API_KEY`,
+`OPENAI_API_KEY`, and `GEMINI_API_KEY` (each either `set (source,
+last 4: …xxxx)` or `missing`). Editing a key uses a masked input —
+press **Tab** to peek at what you typed. Submitting an empty value
+clears the entry. The key value itself never displays in full; only
+the last four characters surface for verification. If a key is set
+via environment variable, the TUI warns you that env vars override
+the file so a TUI write won't take effect until the env var is
+unset.
 
 When `--allow-submit` is enabled, pressing **Run** opens a dedicated
 consent screen showing the target URL, persona, the test identity that
@@ -689,14 +703,22 @@ safety prompt the CLI shows. The default is **No, cancel**.
 
 If the API key for the selected provider is missing, a red banner
 appears above the menu and Run is blocked until you set it (export the
-env var or add it to `~/.persona-review/keys.yaml`).
+env var, add it to `~/.persona-review/keys.yaml`, or use the in-TUI
+API keys editor).
+
+From the persona list, press **Enter** on any persona to open the
+inspector and view its raw YAML — including built-in personas and
+any custom ones you've dropped into `~/.persona-review/personas/`.
+Use ↑↓ / PgUp / PgDn / `g` / `G` to scroll through long files.
 
 The TUI is theme-safe: it uses colors that read well on both dark and
 light terminal backgrounds and never paints a background of its own.
 
-`--ui` cannot be combined with `--json`. Provider/model switching,
-in-TUI API-key editing, the full-page snapshot toggle, and the persona
-YAML inspector are planned for Phase 3 — see `AGENTS.md`.
+`--ui` cannot be combined with `--json`. The TUI now covers the full
+review workflow — including provider/model switching, in-TUI API-key
+editing, and the persona inspector. The only remaining roadmap item
+is a log viewer for past runs, which depends on first adding run-log
+writing to the CLI — see `AGENTS.md` for the open question.
 
 ---
 
