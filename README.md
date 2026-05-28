@@ -99,7 +99,7 @@ Entry points planned:
 | Entry point | Status | How to run |
 |---|---|---|
 | **CLI** (`persona-review`) | ✅ done | `npx persona-review <url>` or `npm run review -- <url>` |
-| **TUI** (`persona-review --ui`) | ✅ Phase 1 | `npx persona-review --ui` or `npm run review -- --ui` |
+| **TUI** (`persona-review --ui`) | ✅ Phase 1 + 2 | `npx persona-review --ui` or `npm run review -- --ui` |
 | **MCP server** (`persona-review-mcp`) | TBD | Mounts into Claude Code / Codex / Gemini CLI as a tool |
 
 ---
@@ -666,12 +666,26 @@ Inside the TUI:
 
 - `↑` / `↓` and `Enter` navigate menus.
 - `p` from the main menu opens the full persona list with descriptions.
+- `s` from the main menu opens the Settings screen.
 - During the review, status lines stream live; the final feedback and
   cost line are rendered when it completes.
 - After the review, press `r` to chat (REPL) with the same persona,
   `n` to start a new review, or `q` to quit. In chat, type `exit` (or
   press `q`) to leave.
 - `Ctrl-C` quits cleanly and closes the browser session.
+
+The Settings screen lets you, for the current session, toggle form
+submission (with a consent screen), browser downloads, and cross-page
+navigation; pick a custom submit-data file; and edit the cost cap, max
+actions per phase, and max output tokens. Settings are session-only —
+edit `~/.persona-review/defaults.yaml` to make them stick. When any of
+submit / downloads / cross-page navigation is on, the main form shows a
+warning line so you can't miss it.
+
+When `--allow-submit` is enabled, pressing **Run** opens a dedicated
+consent screen showing the target URL, persona, the test identity that
+will be typed into form fields, and a final yes/no choice — the same
+safety prompt the CLI shows. The default is **No, cancel**.
 
 If the API key for the selected provider is missing, a red banner
 appears above the menu and Run is blocked until you set it (export the
@@ -680,11 +694,9 @@ env var or add it to `~/.persona-review/keys.yaml`).
 The TUI is theme-safe: it uses colors that read well on both dark and
 light terminal backgrounds and never paints a background of its own.
 
-`--ui` cannot be combined with `--json`. The MVP covers URL/persona/
-device selection, persona browsing, review, REPL, and API-key warnings;
-provider/model switching, in-TUI key editing, and the Phase-2 toggle
-row (cross-page navigation, downloads, form submission, cost cap, max
-actions, max tokens) are planned — see `AGENTS.md`.
+`--ui` cannot be combined with `--json`. Provider/model switching,
+in-TUI API-key editing, the full-page snapshot toggle, and the persona
+YAML inspector are planned for Phase 3 — see `AGENTS.md`.
 
 ---
 

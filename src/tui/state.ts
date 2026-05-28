@@ -4,6 +4,7 @@ import type { Provider } from "../llm/types.js";
 import type { UserDefaults } from "../defaults.js";
 import type { SessionDevice } from "../browser.js";
 import type { ApiKeySource } from "../keys.js";
+import type { SubmitData } from "../submit-data.js";
 import {
   DEFAULT_COST_CAP_USD,
   DEFAULT_MAX_ACTIONS,
@@ -12,7 +13,14 @@ import {
 } from "../agent.js";
 import { DEFAULT_PERSONA_ID } from "../persona.js";
 
-export type Screen = "form" | "personas" | "review" | "repl" | "done";
+export type Screen =
+  | "form"
+  | "personas"
+  | "settings"
+  | "submitConsent"
+  | "review"
+  | "repl"
+  | "done";
 
 export interface ChatTurn {
   q: string;
@@ -42,6 +50,11 @@ export interface State {
   maxActions: number;
   costCapUsd: number;
   fullPage: boolean;
+  allowSubmit: boolean;
+  allowDownloads: boolean;
+  allowCrossPageNavigation: boolean;
+  submitDataPath: string | undefined;
+  submitData: SubmitData | null;
   personas: Persona[];
   conv: PersonaConversation | null;
   statusLog: string[];
@@ -64,7 +77,15 @@ export type Action =
   | { type: "REVIEW_DONE"; review: ReviewRun }
   | { type: "BUSY"; busy: boolean }
   | { type: "ERROR"; error: string | null }
-  | { type: "REPL_APPEND"; turn: ChatTurn };
+  | { type: "REPL_APPEND"; turn: ChatTurn }
+  | { type: "TOGGLE_ALLOW_SUBMIT" }
+  | { type: "TOGGLE_ALLOW_DOWNLOADS" }
+  | { type: "TOGGLE_ALLOW_CROSS_PAGE_NAVIGATION" }
+  | { type: "SET_SUBMIT_DATA_PATH"; path: string | undefined }
+  | { type: "SET_SUBMIT_DATA"; data: SubmitData | null }
+  | { type: "SET_COST_CAP"; value: number }
+  | { type: "SET_MAX_ACTIONS"; value: number }
+  | { type: "SET_MAX_TOKENS"; value: number };
 
 const STATUS_LOG_CAP = 200;
 
@@ -84,6 +105,11 @@ export function initialState(
     maxActions: userDefaults.maxActions ?? DEFAULT_MAX_ACTIONS,
     costCapUsd: userDefaults.costCapUsd ?? DEFAULT_COST_CAP_USD,
     fullPage: userDefaults.fullPage ?? false,
+    allowSubmit: userDefaults.allowSubmit ?? false,
+    allowDownloads: userDefaults.allowDownloads ?? false,
+    allowCrossPageNavigation: userDefaults.allowCrossPageNavigation ?? false,
+    submitDataPath: userDefaults.submitDataPath,
+    submitData: null,
     personas,
     conv: null,
     statusLog: [],
@@ -132,5 +158,30 @@ export function reducer(state: State, action: Action): State {
       return { ...state, error: action.error, busy: false };
     case "REPL_APPEND":
       return { ...state, chat: state.chat.concat(action.turn), busy: false };
+    case "TOGGLE_ALLOW_SUBMIT":
+      // Flipping submit off invalidates any parsed submit-data so we re-load
+      // it when the user turns submit back on (file may have changed).
+      return {
+        ...state,
+        allowSubmit: !state.allowSubmit,
+        submitData: state.allowSubmit ? null : state.submitData,
+      };
+    case "TOGGLE_ALLOW_DOWNLOADS":
+      return { ...state, allowDownloads: !state.allowDownloads };
+    case "TOGGLE_ALLOW_CROSS_PAGE_NAVIGATION":
+      return {
+        ...state,
+        allowCrossPageNavigation: !state.allowCrossPageNavigation,
+      };
+    case "SET_SUBMIT_DATA_PATH":
+      return { ...state, submitDataPath: action.path };
+    case "SET_SUBMIT_DATA":
+      return { ...state, submitData: action.data };
+    case "SET_COST_CAP":
+      return { ...state, costCapUsd: action.value };
+    case "SET_MAX_ACTIONS":
+      return { ...state, maxActions: action.value };
+    case "SET_MAX_TOKENS":
+      return { ...state, maxOutputTokens: action.value };
   }
 }

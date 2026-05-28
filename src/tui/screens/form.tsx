@@ -5,6 +5,7 @@ import SelectInput from "ink-select-input";
 import type { State, Action } from "../state.js";
 import type { Persona } from "../../persona.js";
 import type { SessionDevice } from "../../browser.js";
+import { loadSubmitData } from "../../submit-data.js";
 import { colors } from "../theme.js";
 import { KeyHint } from "../components/KeyHint.js";
 
@@ -25,6 +26,7 @@ export function FormScreen({ state, dispatch }: Props) {
   useInput(
     (input) => {
       if (input === "p") dispatch({ type: "NAVIGATE", screen: "personas" });
+      else if (input === "s") dispatch({ type: "NAVIGATE", screen: "settings" });
     },
     { isActive: mode === "menu" }
   );
@@ -126,12 +128,34 @@ export function FormScreen({ state, dispatch }: Props) {
       setError(`Persona "${state.personaId}" not found.`);
       return;
     }
+    if (state.allowSubmit) {
+      // Parse the submit-data file now so the consent screen can render the
+      // resolved identity. Re-parse every Run so the file can change between
+      // Settings save and the actual run.
+      try {
+        const data = loadSubmitData(state.submitDataPath);
+        dispatch({ type: "SET_SUBMIT_DATA", data });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(`submit-data: ${msg}`);
+        return;
+      }
+      setError(null);
+      dispatch({ type: "NAVIGATE", screen: "submitConsent" });
+      return;
+    }
     setError(null);
     dispatch({ type: "RESET_RUN" });
     dispatch({ type: "NAVIGATE", screen: "review" });
   };
 
-  type MenuValue = "url" | "persona" | "device" | "browse" | "run";
+  type MenuValue =
+    | "url"
+    | "persona"
+    | "device"
+    | "settings"
+    | "browse"
+    | "run";
   const menuItems: { key: string; label: string; value: MenuValue }[] = [
     {
       key: "url",
@@ -148,6 +172,7 @@ export function FormScreen({ state, dispatch }: Props) {
       label: `Device   —  ${describeDevice(state.device, persona)}`,
       value: "device",
     },
+    { key: "settings", label: "Settings (toggles, cost cap, max actions, max tokens, submit-data)", value: "settings" },
     { key: "browse", label: "Browse personas (full list with summaries)", value: "browse" },
     { key: "run", label: "▶ Run review", value: "run" },
   ];
@@ -162,6 +187,13 @@ export function FormScreen({ state, dispatch }: Props) {
           </Text>
           <Text dimColor>
             Add it to {state.apiKey.filePath}, or export it before running.
+          </Text>
+        </Box>
+      )}
+      {phase2Warning(state) && (
+        <Box marginTop={1}>
+          <Text color={colors.warning} bold>
+            {phase2Warning(state)}
           </Text>
         </Box>
       )}
@@ -180,13 +212,20 @@ export function FormScreen({ state, dispatch }: Props) {
             if (v === "url") setMode("editing-url");
             else if (v === "persona") setMode("editing-persona");
             else if (v === "device") setMode("editing-device");
+            else if (v === "settings") dispatch({ type: "NAVIGATE", screen: "settings" });
             else if (v === "browse") dispatch({ type: "NAVIGATE", screen: "personas" });
             else handleRun();
           }}
         />
       </Box>
       <KeyHint
-        hints={["↑↓ navigate", "Enter select", "p browse personas", "Ctrl-C quit"]}
+        hints={[
+          "↑↓ navigate",
+          "Enter select",
+          "p browse personas",
+          "s settings",
+          "Ctrl-C quit",
+        ]}
       />
     </Box>
   );
@@ -213,4 +252,12 @@ function describeDevice(
     return `auto  (persona default: ${persona.device}, will use: ${resolved})`;
   }
   return "auto";
+}
+
+function phase2Warning(state: State): string | null {
+  const parts: string[] = [];
+  if (state.allowSubmit) parts.push("submit enabled");
+  if (state.allowDownloads) parts.push("downloads enabled");
+  if (state.allowCrossPageNavigation) parts.push("cross-page nav enabled");
+  return parts.length ? `⚠ ${parts.join(" · ")}` : null;
 }

@@ -2,10 +2,10 @@
 
 ## Status
 
-**Phase 1 shipped.** Launch with `npx persona-review --ui` or
-`npm run review -- --ui`.
+**Phase 1 and Phase 2 shipped.** Launch with `npx persona-review --ui`
+or `npm run review -- --ui`.
 
-Phase 1 covers the original priorities 1–5:
+Phase 1 covers original priorities 1–5:
 
 1. Form with URL, persona, device.
 2. Persona browser with role summaries.
@@ -15,7 +15,18 @@ Phase 1 covers the original priorities 1–5:
 5. Red banner + Run block when the API key for the selected provider is
    missing.
 
-Phase 2 and Phase 3 are still **not started** — see roadmap below.
+Phase 2 covers original priorities 6–12 (Settings screen + submit
+consent flow):
+
+6. Toggle cross-page navigation.
+7. Toggle browser downloads.
+8. Toggle form submission + dedicated consent screen before Run.
+9. Pick a custom submit-data file (TextInput with parse-on-save).
+10. Edit cost cap (positive number).
+11. Edit max actions per phase (positive integer).
+12. Edit max output tokens (positive integer).
+
+Phase 3 is **not started** — see roadmap below.
 
 ## Constraints (from the original brief)
 
@@ -63,16 +74,37 @@ CLI surface added (≈20 lines in `src/cli.ts`):
 - `screens/form.tsx` — menu-driven form (`ink-select-input`). Three edit
   sub-modes: URL (`ink-text-input`), persona (`SelectInput` over the 12
   archetypes), device (auto / mobile / desktop). API-key banner + block
-  at Run. `p` hotkey opens persona list.
+  at Run. Phase-2 warning indicator when any of allow-submit /
+  allow-downloads / allow-cross-page-navigation is on. `handleRun()`
+  parses submit-data and routes to `submitConsent` when `allowSubmit`.
+  Hotkeys: `p` persona list, `s` settings.
 - `screens/personaList.tsx` — paged browse, 4 per page, with role,
   device, tech, engagement, scrutiny, reading, accessibility. `← →`
   paging; `q` / `Esc` back to form.
+- `screens/settings.tsx` (Phase 2) — 7-row `SelectInput` menu. Rows 1–3
+  flip toggles on Enter (allow-submit, allow-downloads, allow-cross-page
+  -navigation). Row 4 (submit-data file path) opens an inline TextInput
+  validated with `isSubmitDataYamlPath` + `loadSubmitData` on save —
+  empty path means "use bundled submit-data.yaml". Rows 5–7 (cost cap,
+  max actions, max tokens) open numeric TextInputs validated with the
+  helpers in `validate.ts`. Esc / q returns to form. Settings are
+  session-only — no writes to `defaults.yaml`.
+- `screens/submitConsent.tsx` (Phase 2) — port of `cli.ts:582-633`.
+  Renders target URL, persona, source path, and `describeSubmitData()`
+  identity block, then a `SelectInput` with "No, cancel" first and
+  "Yes, continue and submit" second. No → form (toggle preserved).
+  Yes → `RESET_RUN` + `NAVIGATE review`. Esc cancels.
 - `screens/review.tsx` — `<StatusLog>` + `<Spinner>` while running;
   `<Feedback>` + `<CostLine>` when done. Keys: `r` REPL, `n` new
   review, `q` quit.
 - `screens/repl.tsx` — scrollback of `{q, a, cost…}` turns;
   `TextInput` for the next question; cap-reached state shows a warning
   and disables input. `exit` / `quit` / `q` leaves.
+- `validate.ts` (Phase 2) — `parsePositiveInteger(raw)` and
+  `parsePositiveNumber(raw)`. Pure helpers returning
+  `{ok: true, value} | {ok: false, error}`. Mirrors `cli.ts:232,241`
+  but returns the error instead of calling `process.exit` (which would
+  tear down the TUI).
 - `components/StatusLog.tsx` — tail of N (default 12) lines, `dimColor`.
 - `components/CostLine.tsx` — formats provider/model/tokens/$used/$cap
   using `formatUsd()` from `src/cost.ts`.
@@ -93,6 +125,7 @@ CLI surface added (≈20 lines in `src/cli.ts`):
 | `Feedback` shape | `src/review.ts:4` |
 | `formatUsd()` | `src/cost.ts:179` |
 | `PROVIDER_ENV_VARS` | `src/agent.ts:48` |
+| `loadSubmitData()` / `isSubmitDataYamlPath()` / `describeSubmitData()` / `SubmitData` (Phase 2) | `src/submit-data.ts` |
 
 ### Dependencies added
 
@@ -108,227 +141,61 @@ In `devDependencies`: `@types/react` ^18.
 
 `npm-shrinkwrap.json` grew by ~680 lines / 48 packages.
 
-## Phase 2 (next) — settings screen + submit consent
+## Phase 2 (shipped) — settings screen + submit consent
 
-Covers original priorities 6–12. Adds a settings sub-screen with the
-seven editable fields, plus a dedicated submit-consent screen for
-`--allow-submit`.
+Original priorities 6–12 are live. Full file-by-file detail is in the
+Architecture section above. This section is the design-decision log so
+future-me doesn't relitigate choices.
 
-### Design decisions (already made — do not re-ask)
+### Design decisions (locked)
 
-- **Settings are session-only.** No writes to `~/.persona-review/defaults.yaml`
-  in Phase 2. Users who want a setting to stick edit the file manually.
-  This avoids adding a `writeUserDefaults()` round-trip and keeps Phase 2
-  focused. (Reconsider for Phase 3+ if there's demand.)
-- **Booleans flip on Enter.** No sub-screen. The menu row shows the
-  current value (e.g. `Downloads  off`); pressing Enter flips it. Faster
-  than persona/device-style sub-screens and unambiguous because the label
-  re-renders.
-- **No `--yes`-style consent bypass in the TUI.** TUI users are interactive
+- **Settings are session-only.** No writes to
+  `~/.persona-review/defaults.yaml`. Users who want a setting to stick
+  edit the file manually. Avoids adding a `writeUserDefaults()`
+  round-trip and keeps Phase 2 focused. (Revisit if Phase 3+ adds a
+  "Save as default" item.)
+- **Booleans flip on Enter** (no sub-screen). The row label re-renders
+  with the new value so the change is obvious.
+- **No `--yes` consent bypass in the TUI.** TUI users are interactive
   by definition. For automation, use the CLI.
-- **Keep the warning indicator on the form** when any of allow-submit /
-  allow-downloads / allow-cross-page-navigation is on. It's worth the
-  screen real estate because all three change browser behaviour in ways
-  users should notice before pressing Run.
-- **Hotkey `s` for Settings** alongside the menu item, mirroring `p` for
-  personas.
+- **Warning indicator on the form** when any of allow-submit /
+  allow-downloads / allow-cross-page-navigation is on. Bold magenta,
+  formatted as `⚠ submit enabled · downloads enabled · cross-page nav enabled`.
+- **Hotkey `s` for Settings**, alongside the menu item, mirroring `p`.
+- **Consent screen has "No, cancel" first.** Safer default; matches the
+  CLI's prompt that requires explicit `y`/`yes` to proceed.
 
-### State changes (`src/tui/state.ts`)
-
-Add to `State`, initialized from `userDefaults`:
+### State additions (in `src/tui/state.ts`)
 
 ```
-allowSubmit:              boolean
-allowDownloads:           boolean
-allowCrossPageNavigation: boolean
-submitDataPath:           string | undefined   // undefined = bundled default
-submitData:               SubmitData | null    // lazy-loaded for consent
+allowSubmit, allowDownloads, allowCrossPageNavigation: boolean
+submitDataPath:                                       string | undefined
+submitData:                                           SubmitData | null
 ```
 
-`fullPage`, `maxOutputTokens`, `maxActions`, `costCapUsd` are already on
-`State`; Phase 2 just makes the last three editable. `fullPage` stays
-deferred to Phase 3 (priority 16).
+`Screen` gained `"settings"` and `"submitConsent"`. Eight new actions:
+`TOGGLE_ALLOW_*` (3), `SET_SUBMIT_DATA_PATH`, `SET_SUBMIT_DATA`,
+`SET_COST_CAP`, `SET_MAX_ACTIONS`, `SET_MAX_TOKENS`.
 
-New actions:
+`TOGGLE_ALLOW_SUBMIT` clears `submitData` when flipping off, so the
+file is re-parsed if the toggle is flipped on again later. `handleRun()`
+also re-parses on every Run so file edits between Settings-save and Run
+are picked up.
 
-- `TOGGLE_ALLOW_SUBMIT`, `TOGGLE_ALLOW_DOWNLOADS`, `TOGGLE_ALLOW_CROSS_PAGE_NAVIGATION`
-- `SET_SUBMIT_DATA_PATH` (path: string | undefined)
-- `SET_SUBMIT_DATA` (data: SubmitData | null)
-- `SET_COST_CAP` (n: number), `SET_MAX_ACTIONS` (n: number), `SET_MAX_TOKENS` (n: number)
+### Known UX nuances (not bugs)
 
-`Screen` gains `"settings"` and `"submitConsent"`.
-
-### New screen: `src/tui/screens/settings.tsx`
-
-Reachable from the form's main menu via a new "Settings" item and the
-hotkey `s`. Single `SelectInput` menu, seven items, each showing the
-current value:
-
-```
-persona-review · Settings
-
-  Submit forms          off
-  Allow downloads       off
-  Cross-page nav        off
-  Submit-data file      (bundled submit-data.yaml)
-  Cost cap              $1.0000
-  Max actions           15
-  Max tokens            4096
-
-[Enter toggle / edit  •  Esc back to form  •  Ctrl-C quit]
-```
-
-Behavior per row:
-
-- **Rows 1–3 (toggles)** — Enter dispatches the matching `TOGGLE_*`
-  action. No sub-screen. Cursor stays put so the change is obvious.
-- **Submit-data file** — Enter opens an inline `TextInput` sub-mode
-  prefilled with the current path (empty for "use bundled"). On Enter:
-  - Empty string → `SET_SUBMIT_DATA_PATH(undefined)`,
-    `SET_SUBMIT_DATA(null)`, return to menu.
-  - Non-empty path failing `isSubmitDataYamlPath()` → inline red error,
-    stay in edit mode.
-  - Non-empty + parses (`loadSubmitData(p)` succeeds) →
-    `SET_SUBMIT_DATA_PATH(p)`, `SET_SUBMIT_DATA(parsed)`, return.
-  - Non-empty + parse throws (file missing, schema error) → inline error.
-- **Cost cap / Max actions / Max tokens** — `TextInput` sub-mode.
-  Validate on submit: `parsePositiveNumber` for cost cap,
-  `parsePositiveInteger` for the other two. Bad input → inline error,
-  stay editing.
-
-`Esc` (or `q` when not in TextInput) returns to form.
-
-### New screen: `src/tui/screens/submitConsent.tsx`
-
-Direct port of `cli.ts:582-633`. Renders the consent banner using
-existing helpers from `src/submit-data.ts` — no new logic there:
-
-```
-=== --allow-submit: form submission ENABLED for this run ===
-
-Target URL: <state.url>
-Persona:    <persona.name> (<persona.id>)
-
-Source: <state.submitDataPath ?? "bundled submit-data.yaml">
-Test identity that will be typed into form fields:
-
-  <describeSubmitData(state.submitData, persona) — indented>
-
-This may create a real record in the target site's CRM, marketing
-automation, or analytics. Records will be findable by the name and
-email above; delete them after the run.
-Hard limit: at most one successful submission per session.
-
-  ▶ No, cancel
-    Yes, continue and submit
-```
-
-`SelectInput` with the two options, **"No" first** (safer default). On
-No → `NAVIGATE form` (submit toggle stays on; user can re-run or flip
-it off). On Yes → `NAVIGATE review`.
-
-### Form changes (`src/tui/screens/form.tsx`)
-
-1. Insert "Settings" between "Device" and "Browse" in the main menu.
-2. Add hotkey `s` (parallel to `p`) → `NAVIGATE settings`.
-3. Render a warning indicator row when any Phase 2 toggle is on:
-   ```
-   ⚠ submit enabled · downloads enabled · cross-page nav enabled
-   ```
-   Style: bold + `colors.warning` (magenta) from `theme.ts`.
-4. Update `handleRun()`:
-   - Keep existing checks (URL, API key, persona).
-   - **New:** if `state.allowSubmit`:
-     - If `state.submitData == null`, call `loadSubmitData(state.submitDataPath)`
-       synchronously; dispatch `SET_SUBMIT_DATA`. On error → inline message,
-       abort Run.
-     - Then `NAVIGATE submitConsent` instead of `NAVIGATE review`.
-
-### App routing (`src/tui/app.tsx`)
-
-- Add cases for `"settings"` and `"submitConsent"` in the screen-routing
-  JSX.
-- Extend the review `useEffect`'s `openConversation()` call to pass
-  `allowSubmit`, `allowDownloads`, `allowCrossPageNavigation`, `submitData`.
-  The signature already accepts them (see `agent.ts:62`).
-- No change to the side-effect trigger — still keyed on
-  `state.screen === "review"`.
-
-### Validation helpers (`src/tui/validate.ts`, new)
-
-Two pure functions, no Ink dependency:
-
-```ts
-parsePositiveInteger(raw: string): { ok: true; value: number } | { ok: false; error: string }
-parsePositiveNumber (raw: string): { ok: true; value: number } | { ok: false; error: string }
-```
-
-Mirrors `cli.ts:232,241`, but **returns** the error instead of calling
-`process.exit` (which would kill the TUI).
-
-### Files touched
-
-Modified:
-
-- `src/tui/state.ts` — new fields, actions, initialState picks up new
-  userDefaults keys.
-- `src/tui/screens/form.tsx` — Settings menu entry, `s` hotkey, warning
-  indicator, submit-data parsing on Run, route to consent.
-- `src/tui/app.tsx` — new screen routing, extra `openConversation`
-  options.
-
-New:
-
-- `src/tui/screens/settings.tsx`
-- `src/tui/screens/submitConsent.tsx`
-- `src/tui/validate.ts`
-
-Reused (no changes):
-
-- `loadSubmitData`, `describeSubmitData`, `isSubmitDataYamlPath`,
-  `SubmitData` from `src/submit-data.ts`.
-- All Phase 1 components.
-
-### Risks / known considerations
-
-1. **No `~` expansion in submit-data path.** The CLI doesn't expand it
-   either. If a user types `~/file.yaml`, they get `ENOENT`. Mention this
-   in the TextInput placeholder.
-2. **Numeric input validates on Enter, not keystroke.** Pasting "abc"
-   only fails when the user submits. Acceptable.
-3. **Submit-data path could change between Settings save and Run.** The
-   `handleRun()` re-parse covers it.
-4. **Submit toggle preserved after cancel.** Picking "No, cancel" on
-   the consent screen does NOT flip the toggle off. Matches CLI per-run
-   semantics. User flips off in Settings if they didn't mean it.
-
-### Verification
-
-Automatable under PTY:
-
-- [ ] Settings menu renders with seven items + correct current values.
-- [ ] Each toggle flips on Enter; menu label re-renders.
-- [ ] Numeric editor rejects "0", "-1", "abc", "1.5" for max-actions
-  (positive integer).
-- [ ] Numeric editor accepts "0.5", "2", "10" for cost cap (positive
-  number).
-- [ ] Submit-data path: invalid extension → error.
-- [ ] Submit-data path: nonexistent file → error.
-- [ ] Submit-data path: valid file → parses, returns to menu.
-- [ ] Form warning line appears iff any Phase 2 toggle is on.
-- [ ] With submit toggle on and a valid file, pressing Run shows the
-  consent screen with the test identity rendered.
-- [ ] Picking "No, cancel" returns to form; submit toggle still on.
-
-Requires real API key + Chromium (manual):
-
-- [ ] Picking "Yes, continue" runs the review with `allowSubmit=true`;
-  persona attempts one form submission; status log shows the line from
-  `agent.ts:570`.
-- [ ] `allowDownloads=true` + a page with a download link → Playwright
-  permits the download.
-- [ ] `allowCrossPageNavigation=true` + a same-tab link click →
-  navigation succeeds.
+1. **Numeric / path editors prefill the current value.** Users may not
+   realize they need to backspace the prefilled value before typing a
+   new one. Documented in PTY tests where typing `"0"` into the cost-cap
+   field ended up saving `10`. Matches the URL editor's behavior.
+2. **No `~` expansion in submit-data path.** The CLI doesn't expand it
+   either. `~/file.yaml` → `ENOENT`. The placeholder hints at "absolute
+   path".
+3. **Numeric input validates on Enter, not keystroke.** Pasting `"abc"`
+   only fails on submit. Acceptable.
+4. **Submit toggle preserved after consent cancel.** Picking "No,
+   cancel" does NOT flip the toggle off. Matches CLI per-run semantics.
+   User flips it off in Settings if they didn't mean it.
 
 ## Phase 3 (later)
 
@@ -375,6 +242,8 @@ log-writing story (where? rotation? format?) before adding a viewer.
 
 ### Done (automated, captured in repo state)
 
+Phase 1:
+
 - [x] `npm run typecheck` — clean.
 - [x] `npm run build` — clean, produces `dist/tui/*.js` and
   `dist/tui/{components,screens}/*.js`.
@@ -389,7 +258,24 @@ log-writing story (where? rotation? format?) before adding a viewer.
 - [x] Run with empty URL → inline "URL is required." error.
 - [x] Run with URL but no API key → inline `<ENV_VAR>` not set error.
 
+Phase 2:
+
+- [x] `s` hotkey opens Settings; 7 rows render with correct values.
+- [x] Each of the three toggles flips on Enter; row label re-renders.
+- [x] Cost cap editor accepts valid values (saves `$10.0000`).
+- [x] Max actions rejects `151.5` with "Must be a positive integer."
+- [x] Submit-data path with `.txt` ext → "Path must end in .yaml or .yml."
+- [x] Submit-data path pointing at a missing file → `ENOENT` error.
+- [x] Form warning indicator shows individual + combined toggles
+  (`⚠ submit enabled · downloads enabled · cross-page nav enabled`).
+- [x] Submit on + URL + API key → pressing Run opens consent screen
+  with target URL, persona, source line, and full identity block from
+  `describeSubmitData()` (incl. custom YAML fields).
+- [x] "No, cancel" returns to form; submit toggle preserved.
+
 ### Pending (manual, requires a real API key + Chromium)
+
+Phase 1:
 
 - [ ] End-to-end review on a small public page (e.g. `https://example.org/`):
   status streams, feedback renders, cost line shows.
@@ -404,31 +290,73 @@ log-writing story (where? rotation? format?) before adding a viewer.
   works — confirms `dist/tui/` is included via the existing
   `files: ["dist", ...]` entry.
 
+Phase 2:
+
+- [ ] Consent "Yes, continue" runs the review with `allowSubmit=true`;
+  persona attempts one form submission; status log shows the line from
+  `agent.ts:570`.
+- [ ] `allowDownloads=true` + a page with a download link → Playwright
+  permits the download.
+- [ ] `allowCrossPageNavigation=true` + a same-tab link click →
+  navigation succeeds.
+
 ## Continuation notes
 
-When picking this up next time:
+When picking this up next time, Phase 3 is the next stop. Before
+coding, plan with the user the same way Phase 2 was planned (one
+clarifying-question round, then a written-up plan).
 
-- **Phase 2 is fully planned in this file** — section "Phase 2 (next)"
-  above is implementation-ready. Two design decisions are already locked
-  (session-only persistence, flip-on-Enter toggles); don't re-ask the
-  user about those.
-- **Suggested implementation order for Phase 2** (each step is
-  independently testable, so the working tree stays green between them):
-  1. `src/tui/validate.ts` — pure helpers, no UI. Easiest start.
-  2. State changes in `src/tui/state.ts` — fields, actions, initialState.
-  3. `src/tui/screens/settings.tsx` with only the three numeric editors
-     wired (cost cap, max actions, max tokens). Add "Settings" menu
-     item + `s` hotkey on the form. This is fully testable under PTY.
-  4. Add the three toggle rows (cross-page nav, downloads, submit).
-  5. Submit-data file row (TextInput with parse-on-save).
-  6. Warning indicator on the form.
-  7. `src/tui/screens/submitConsent.tsx` + the `handleRun()` route to it.
-  8. Extend the `openConversation()` call in `app.tsx` to pass the new
-     options.
-- **Phase 1 design plan** lives at
-  `/Users/osvaldogago/.claude/plans/hi-please-look-at-rosy-dragonfly.md`
-  if you need to cross-reference the original Phase 1 reasoning.
-- **For Phase 3's API key writer**: look at `ensureUserKeysFile()`
-  (`src/keys.ts:17`) for the file-creation pattern (mode 0o600). Add a
-  sibling `writeApiKey(envVar, value)` there rather than reaching into
-  YAML serialization from the TUI.
+**Phase 3 scope (priorities 13–17):** provider picker, model picker, in-
+TUI API-key editor, full-page snapshot toggle, persona YAML inspector.
+Priority 18 (log viewer) stays deferred until log writing is decided.
+
+**Likely clarifying questions to ask the user before Phase 3:**
+
+1. **API-key writer security.** Writing to `~/.persona-review/keys.yaml`
+   means handling a secret on screen. Should the TUI mask the key field
+   while typing (ink-text-input supports `mask="*"`)? Should keys ever
+   be displayed in the UI for editing, or only "add" / "replace"?
+2. **Model picker scope.** `availableModelsFor(provider)` returns only
+   models with a pricing entry in `src/cost.ts`. Should the picker allow
+   typing a custom model id (advanced users) or hard-restrict to the
+   priced list?
+3. **Persona inspector — read-only or editable?** Read-only is much
+   simpler. Editing custom personas under `~/.persona-review/personas/`
+   would need a YAML round-trip and schema validation; probably scope it
+   out of Phase 3.
+
+**Sketch of where things plug in:**
+
+- `lookupApiKey` lives at `src/keys.ts:25`. The Phase 3 writer should
+  sit next to it as `writeApiKey(envVar, value, filePath?)`, preserve
+  `ensureUserKeysFile()`'s 0o600 mode (`src/keys.ts:17`), and parse the
+  existing YAML so we don't clobber other keys. The TUI should call it
+  and then re-run `lookupApiKey` to refresh `state.apiKey`.
+- `availableModelsFor(provider)` is at `src/cost.ts:82`,
+  `defaultModelForProvider(provider)` at `src/agent.ts:54`. Plug into
+  Settings rows analogous to Phase 2's pattern.
+- `full_page` toggle is already a `state.fullPage` field; just add a row
+  in `settings.tsx` and a `TOGGLE_FULL_PAGE` action.
+- For the persona inspector: `BUILTIN_PERSONAS_DIR` and
+  `USER_PERSONAS_DIR` are exported from `src/persona.ts` and
+  `src/user-config.ts`. The TUI already has all 12 personas in
+  `state.personas`; the inspector just needs to read the raw YAML file
+  given the id. The path resolver pattern is in `loadPersonasInDir` at
+  `src/persona.ts:75`.
+
+**Design plans for completed phases** (reference if needed):
+
+- `/Users/osvaldogago/.claude/plans/hi-please-look-at-rosy-dragonfly.md`
+  — Phase 1 original plan.
+- Phase 2 plan lived in the chat session that shipped it; the
+  "Phase 2 (shipped)" section above captures the locked decisions and
+  UX nuances worth remembering.
+
+**Don't re-litigate these settled choices** (they apply to Phase 3 too):
+
+- Session-only changes — don't add writes to `defaults.yaml` unless the
+  user explicitly asks.
+- Toggles flip on Enter, no sub-screen.
+- Light/dark-safe colors from `theme.ts`; never set a background.
+- Runtime deps in `package.json` are exact-pinned (no `^`/`~`) for
+  supply-chain hygiene. devDeps stay on caret.

@@ -9,6 +9,8 @@ import {
 import { reducer, type State } from "./state.js";
 import { FormScreen } from "./screens/form.js";
 import { PersonaListScreen } from "./screens/personaList.js";
+import { SettingsScreen } from "./screens/settings.js";
+import { SubmitConsentScreen } from "./screens/submitConsent.js";
 import { ReviewScreen } from "./screens/review.js";
 import { ReplScreen } from "./screens/repl.js";
 import { colors } from "./theme.js";
@@ -84,6 +86,10 @@ export function App({ initial, onConvChange }: Props) {
           costCapUsd: state.costCapUsd,
           fullPage: state.fullPage,
           device: state.device,
+          allowSubmit: state.allowSubmit,
+          allowDownloads: state.allowDownloads,
+          allowCrossPageNavigation: state.allowCrossPageNavigation,
+          submitData: state.submitData ?? undefined,
           onStatus: (msg) => {
             if (!cancelled) dispatch({ type: "STATUS", msg });
           },
@@ -121,6 +127,12 @@ export function App({ initial, onConvChange }: Props) {
       {state.screen === "form" && <FormScreen state={state} dispatch={dispatch} />}
       {state.screen === "personas" && (
         <PersonaListScreen state={state} dispatch={dispatch} />
+      )}
+      {state.screen === "settings" && (
+        <SettingsScreen state={state} dispatch={dispatch} />
+      )}
+      {state.screen === "submitConsent" && (
+        <SubmitConsentScreen state={state} dispatch={dispatch} />
       )}
       {state.screen === "review" && (
         <ReviewScreen state={state} dispatch={dispatch} />
