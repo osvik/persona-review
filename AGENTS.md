@@ -124,9 +124,14 @@ CLI surface added (≈20 lines in `src/cli.ts`):
   `isSubmitDataYamlPath` + `loadSubmitData` on save — empty path
   means "use bundled". Rows 9–11 (cost cap, max actions, max tokens)
   open numeric TextInputs validated with `validate.ts`. Esc / q
-  returns to form. Settings are session-only — no writes to
-  `defaults.yaml`. API keys (managed via the `apiKeys` screen) are
-  the only Phase 1–3 setting that persists.
+  returns to form. Settings are session-only by default; the final
+  menu row "Save current settings as default" calls
+  `writeUserDefaults()` to persist Settings-owned fields (provider,
+  model, all toggles, submit-data path, cost cap, max actions, max
+  tokens) to `~/.persona-review/defaults.yaml`, then shows a green
+  success flash. Persona and device live in the form screen and are
+  deliberately not part of this save action. API keys are managed
+  separately via the `apiKeys` screen and write to `keys.yaml`.
 - `screens/apiKeys.tsx` (Phase 3) — three rows (per provider) showing
   `set (source, last 4: …xxxx)` or `missing`. `source` is `env`,
   `keys.yaml`, or `missing`. Enter opens an inline masked editor
@@ -165,7 +170,7 @@ CLI surface added (≈20 lines in `src/cli.ts`):
 
 | Export | File:line |
 |---|---|
-| `loadUserDefaults()` | `src/defaults.ts:96` |
+| `loadUserDefaults()` / `writeUserDefaults()` | `src/defaults.ts` |
 | `listPersonas()` / `loadPersonaById()` | `src/persona.ts:44,56` |
 | `lookupApiKey()` | `src/keys.ts:25` |
 | `openConversation()` / `runReviewLoop()` / `runFollowUpTurn()` / `closeConversation()` | `src/agent.ts:217,309,349,295` |
@@ -200,11 +205,16 @@ future-me doesn't relitigate choices.
 
 ### Design decisions (locked)
 
-- **Settings are session-only.** No writes to
-  `~/.persona-review/defaults.yaml`. Users who want a setting to stick
-  edit the file manually. Avoids adding a `writeUserDefaults()`
-  round-trip and keeps Phase 2 focused. (Revisit if Phase 3+ adds a
-  "Save as default" item.)
+- **Settings are session-only by default.** Toggles, numerics, etc.
+  don't auto-write to `~/.persona-review/defaults.yaml`. **Update
+  (post-Phase 3, on user request):** the Settings screen has an
+  explicit "Save current settings as default" row that calls
+  `writeUserDefaults()` to persist Settings-owned state to
+  `defaults.yaml` in the canonical snake_case format the CLI reads.
+  Persona and device are deliberately **not** included — they live
+  in the form screen, so saving them as "current settings" would be
+  misleading. API keys are separate (Phase 3, see Manage API keys →
+  writes to `keys.yaml`). The URL is per-run and never saved.
 - **Booleans flip on Enter** (no sub-screen). The row label re-renders
   with the new value so the change is obvious.
 - **No `--yes` consent bypass in the TUI.** TUI users are interactive
@@ -492,11 +502,16 @@ a `logs` screen to the `Screen` union, a new file under
 
 **Settled choices that apply to any future phase:**
 
-- Session-only changes for everything except secrets — don't add writes
-  to `defaults.yaml` unless the user explicitly asks. (API keys persist
-  via `writeApiKey()` to `~/.persona-review/keys.yaml` because a TUI
-  without a key writer is incomplete; other settings would just be
-  convenience.)
+- TUI state is session-only **by default**. The Settings screen has
+  an explicit "Save current settings as default" row that persists
+  Settings-owned fields (provider, model, all toggles, submit-data
+  path, cost cap, max actions, max tokens) to
+  `~/.persona-review/defaults.yaml` via `writeUserDefaults()`.
+  Persona and device live in the form and are deliberately NOT
+  included. API keys persist via `writeApiKey()` to
+  `~/.persona-review/keys.yaml`. No silent / auto-save behavior
+  anywhere — every persistence path is an explicit user action, and
+  each screen only persists what it owns.
 - Toggles flip on Enter, no sub-screen.
 - Sub-modes (provider, model, persona pickers) use Ink's `SelectInput`
   inline inside the parent screen — not a separate top-level screen.

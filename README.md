@@ -674,17 +674,24 @@ Inside the TUI:
   press `q`) to leave.
 - `Ctrl-C` quits cleanly and closes the browser session.
 
-The Settings screen lets you, for the current session, pick the LLM
-provider and model, manage your API keys, toggle form submission (with
-a consent screen) / browser downloads / cross-page navigation / full-
-page snapshot, pick a custom submit-data file, and edit the cost cap,
-max actions per phase, and max output tokens. Most settings are
-session-only — edit `~/.persona-review/defaults.yaml` to make them
-stick. The exception is API keys: when you edit one from the TUI,
-it's written to `~/.persona-review/keys.yaml` (mode 0o600) so it
-persists across sessions. When any of submit / downloads / cross-page
-navigation is on, the main form shows a warning line so you can't
-miss it.
+The Settings screen lets you pick the LLM provider and model, manage
+your API keys, toggle form submission (with a consent screen) /
+browser downloads / cross-page navigation / full-page snapshot, pick
+a custom submit-data file, and edit the cost cap, max actions per
+phase, and max output tokens. Changes are **session-only by default**
+— restarting the TUI returns everything to whatever
+`~/.persona-review/defaults.yaml` says. The Settings screen has a
+final "Save current settings as default" row: pressing Enter on it
+writes the Settings-screen fields (provider, model, all toggles,
+submit-data path, cost cap, max actions, max tokens) to
+`~/.persona-review/defaults.yaml` in the same `snake_case` format the
+CLI documents, so subsequent CLI runs pick up the same defaults.
+Persona and device live in the form, not in Settings, and aren't
+saved by this action — edit `defaults.yaml` directly to set them as
+defaults. The URL is per-run and never saved. API keys are handled
+separately by the API keys screen — see below. When any of submit /
+downloads / cross-page navigation is on, the main form shows a
+warning line so you can't miss it.
 
 The API keys screen shows the status of `ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`, and `GEMINI_API_KEY` (each either `set (source,

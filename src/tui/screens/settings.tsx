@@ -19,6 +19,7 @@ import {
   parsePositiveInteger,
   parsePositiveNumber,
 } from "../validate.js";
+import { USER_DEFAULTS_PATH, writeUserDefaults } from "../../defaults.js";
 import type { Provider } from "../../llm/types.js";
 
 type MenuValue =
@@ -32,7 +33,8 @@ type MenuValue =
   | "submitData"
   | "costCap"
   | "maxActions"
-  | "maxTokens";
+  | "maxTokens"
+  | "saveDefaults";
 
 type Mode =
   | { kind: "menu" }
@@ -53,6 +55,7 @@ interface Props {
 export function SettingsScreen({ state, dispatch }: Props) {
   const [mode, setMode] = useState<Mode>({ kind: "menu" });
   const [error, setError] = useState<string | null>(null);
+  const [flash, setFlash] = useState<string | null>(null);
 
   // Esc returns to form (from menu OR edit modes). q only in menu mode so
   // it doesn't fight TextInput typing.
@@ -177,10 +180,16 @@ export function SettingsScreen({ state, dispatch }: Props) {
       label: `${label("Max tokens")}${state.maxOutputTokens}`,
       value: "maxTokens",
     },
+    {
+      key: "saveDefaults",
+      label: `▶ Save current settings as default (writes ${USER_DEFAULTS_PATH})`,
+      value: "saveDefaults",
+    },
   ];
 
   const handleSelect = (v: MenuValue) => {
     setError(null);
+    setFlash(null);
     switch (v) {
       case "provider":
         setMode({ kind: "edit-provider" });
@@ -224,6 +233,32 @@ export function SettingsScreen({ state, dispatch }: Props) {
           draft: String(state.maxOutputTokens),
         });
         return;
+      case "saveDefaults":
+        try {
+          // Snapshot only fields owned by this screen. Persona and device
+          // live in the form screen, so they're NOT saved here — saving
+          // them as "current settings" would be misleading. URL is per-run
+          // (not saved). API keys live in keys.yaml (handled separately
+          // by the Manage API keys screen). CLI-only flags (json, repl,
+          // replOnly, yes) are not surfaced in the TUI and not written.
+          writeUserDefaults({
+            provider: state.provider,
+            model: state.model,
+            maxOutputTokens: state.maxOutputTokens,
+            maxActions: state.maxActions,
+            costCapUsd: state.costCapUsd,
+            fullPage: state.fullPage,
+            allowSubmit: state.allowSubmit,
+            allowDownloads: state.allowDownloads,
+            allowCrossPageNavigation: state.allowCrossPageNavigation,
+            submitDataPath: state.submitDataPath,
+          });
+          setFlash(`Saved current settings to ${USER_DEFAULTS_PATH}.`);
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          setError(`Failed to save defaults: ${msg}`);
+        }
+        return;
     }
   };
 
@@ -234,6 +269,13 @@ export function SettingsScreen({ state, dispatch }: Props) {
         <Box marginTop={1}>
           <Text color={colors.error} bold>
             {error}
+          </Text>
+        </Box>
+      )}
+      {flash && (
+        <Box marginTop={1}>
+          <Text color={colors.success} bold>
+            {flash}
           </Text>
         </Box>
       )}
@@ -469,7 +511,9 @@ function Header() {
         persona-review · Settings
       </Text>
       <Text dimColor>
-        Session-only — changes don't write to ~/.persona-review/defaults.yaml.
+        Session-only by default. Pick "Save current settings as default"
+        to persist to ~/.persona-review/defaults.yaml. Persona and
+        device aren't covered here — they live in the form.
       </Text>
     </Box>
   );
