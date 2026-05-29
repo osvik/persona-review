@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { parse as parseYaml } from "yaml";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import type { SessionDevice } from "./browser.js";
 import { isSubmitDataYamlPath } from "./submit-data.js";
 import type { Provider } from "./llm/types.js";
@@ -114,6 +114,53 @@ export function loadUserDefaults(
     assignDefault(defaults, target, value, key, filePath);
   }
   return defaults;
+}
+
+// Canonical file-key for each internal field — matches the snake_case
+// form documented in the README. Used by writeUserDefaults() so the file
+// the TUI writes is the same shape a CLI user would hand-write.
+const internalToFileKey: Record<keyof UserDefaults, string> = {
+  personaId: "persona",
+  provider: "provider",
+  model: "model",
+  maxOutputTokens: "max_tokens",
+  maxActions: "max_actions",
+  costCapUsd: "cost_cap_usd",
+  fullPage: "full_page_snapshot",
+  device: "device",
+  json: "json",
+  repl: "repl",
+  replOnly: "repl_only",
+  allowSubmit: "allow_submit",
+  allowDownloads: "allow_downloads",
+  allowCrossPageNavigation: "allow_cross_page_navigation",
+  submitDataPath: "submit_data",
+  yes: "yes",
+};
+
+/**
+ * Write a snapshot of user defaults to ~/.persona-review/defaults.yaml.
+ * Round-trips through yaml.stringify, so any comments or hand-formatting
+ * in the existing file are normalized away. Undefined values are skipped
+ * (so e.g. `model: undefined` stays absent — falls back to the provider
+ * default at next read).
+ */
+export function writeUserDefaults(
+  values: Partial<UserDefaults>,
+  filePath: string = USER_DEFAULTS_PATH
+): void {
+  ensureUserConfigDirs(path.dirname(filePath));
+  const out: Record<string, unknown> = {};
+  for (const [internal, value] of Object.entries(values)) {
+    if (value === undefined) continue;
+    const fileKey =
+      internalToFileKey[internal as keyof UserDefaults] ?? null;
+    if (!fileKey) continue;
+    out[fileKey] = value;
+  }
+  const content =
+    Object.keys(out).length === 0 ? "" : stringifyYaml(out);
+  writeFileSync(filePath, content);
 }
 
 function assignDefault(

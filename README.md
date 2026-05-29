@@ -30,6 +30,7 @@ Reactions are written in the page's own language, as a native speaker.
     - [Device profile per persona](#device-profile-per-persona)
     - [Example output (prose)](#example-output-prose)
     - [Example output (JSON)](#example-output-json)
+  - [Terminal UI (TUI)](#terminal-ui-tui)
   - [Persona file format](#persona-file-format)
   - [The persona library](#the-persona-library)
   - [Reproducibility](#reproducibility)
@@ -98,6 +99,7 @@ Entry points planned:
 | Entry point | Status | How to run |
 |---|---|---|
 | **CLI** (`persona-review`) | ✅ done | `npx persona-review <url>` or `npm run review -- <url>` |
+| **TUI** (`persona-review --ui`) | ✅ Phase 1 + 2 + 3 | `npx persona-review --ui` or `npm run review -- --ui` |
 | **MCP server** (`persona-review-mcp`) | TBD | Mounts into Claude Code / Codex / Gemini CLI as a tool |
 
 ---
@@ -570,6 +572,10 @@ npm run review -- --version
                            viewport only — the persona must scroll to see more).
   --no-<boolean-flag>      Disable a boolean option set in user defaults
                            for this run, e.g. --no-json or --no-repl.
+  --ui, --tui              Launch the interactive terminal UI instead of
+                           running a single review. Requires a TTY (over
+                           SSH use `ssh -t`). Cannot be combined with
+                           --json. See "Terminal UI (TUI)" below.
   -v, --version            Show the package version.
   -h, --help               Show help.
 ```
@@ -629,6 +635,97 @@ seeded. See "Reproducibility" below.)
   "trace": [{"step": "...", "reaction": "..."}]
 }
 ```
+
+---
+
+## Terminal UI (TUI)
+
+If you'd rather not compose long flag strings, launch the interactive
+terminal UI:
+
+```bash
+npx persona-review --ui
+# or, in a development checkout:
+npm run review -- --ui
+```
+
+The TUI lets you pick the URL, persona, and device interactively, browse
+the persona library with role summaries, run a review and watch its
+progress, then chat with the persona in the same session. It reads the
+same defaults (`~/.persona-review/defaults.yaml`), personas (built-in +
+`~/.persona-review/personas/`), and API keys (env vars or
+`~/.persona-review/keys.yaml`) as the CLI.
+
+Requirements:
+
+- An interactive terminal (TTY). Over SSH, connect with `ssh -t`.
+- All the other CLI requirements (Node 20+, Chromium via
+  `--install-browsers`, an API key for the selected provider).
+
+Inside the TUI:
+
+- `↑` / `↓` and `Enter` navigate menus.
+- `p` from the main menu opens the full persona list with descriptions.
+- `s` from the main menu opens the Settings screen.
+- During the review, status lines stream live; the final feedback and
+  cost line are rendered when it completes.
+- After the review, press `r` to chat (REPL) with the same persona,
+  `n` to start a new review, or `q` to quit. In chat, type `exit` (or
+  press `q`) to leave.
+- `Ctrl-C` quits cleanly and closes the browser session.
+
+The Settings screen lets you pick the LLM provider and model, manage
+your API keys, toggle form submission (with a consent screen) /
+browser downloads / cross-page navigation / full-page snapshot, pick
+a custom submit-data file, and edit the cost cap, max actions per
+phase, and max output tokens. Changes are **session-only by default**
+— restarting the TUI returns everything to whatever
+`~/.persona-review/defaults.yaml` says. The Settings screen has a
+final "Save current settings as default" row: pressing Enter on it
+writes the Settings-screen fields (provider, model, all toggles,
+submit-data path, cost cap, max actions, max tokens) to
+`~/.persona-review/defaults.yaml` in the same `snake_case` format the
+CLI documents, so subsequent CLI runs pick up the same defaults.
+Persona and device live in the form, not in Settings, and aren't
+saved by this action — edit `defaults.yaml` directly to set them as
+defaults. The URL is per-run and never saved. API keys are handled
+separately by the API keys screen — see below. When any of submit /
+downloads / cross-page navigation is on, the main form shows a
+warning line so you can't miss it.
+
+The API keys screen shows the status of `ANTHROPIC_API_KEY`,
+`OPENAI_API_KEY`, and `GEMINI_API_KEY` (each either `set (source,
+last 4: …xxxx)` or `missing`). Editing a key uses a masked input —
+press **Tab** to peek at what you typed. Submitting an empty value
+clears the entry. The key value itself never displays in full; only
+the last four characters surface for verification. If a key is set
+via environment variable, the TUI warns you that env vars override
+the file so a TUI write won't take effect until the env var is
+unset.
+
+When `--allow-submit` is enabled, pressing **Run** opens a dedicated
+consent screen showing the target URL, persona, the test identity that
+will be typed into form fields, and a final yes/no choice — the same
+safety prompt the CLI shows. The default is **No, cancel**.
+
+If the API key for the selected provider is missing, a red banner
+appears above the menu and Run is blocked until you set it (export the
+env var, add it to `~/.persona-review/keys.yaml`, or use the in-TUI
+API keys editor).
+
+From the persona list, press **Enter** on any persona to open the
+inspector and view its raw YAML — including built-in personas and
+any custom ones you've dropped into `~/.persona-review/personas/`.
+Use ↑↓ / PgUp / PgDn / `g` / `G` to scroll through long files.
+
+The TUI is theme-safe: it uses colors that read well on both dark and
+light terminal backgrounds and never paints a background of its own.
+
+`--ui` cannot be combined with `--json`. The TUI now covers the full
+review workflow — including provider/model switching, in-TUI API-key
+editing, and the persona inspector. The only remaining roadmap item
+is a log viewer for past runs, which depends on first adding run-log
+writing to the CLI — see `AGENTS.md` for the open question.
 
 ---
 

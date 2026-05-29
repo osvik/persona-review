@@ -72,6 +72,64 @@ function normalizePersonaDirs(dirs: string | readonly string[]): readonly string
   return typeof dirs === "string" ? [dirs] : dirs;
 }
 
+export interface PersonaSource {
+  filePath: string;
+  raw: string;
+  isBuiltin: boolean;
+}
+
+/**
+ * Find the raw YAML source for a persona id. Walks the dirs in order;
+ * later matches override earlier ones, matching `loadPersonaById`'s
+ * user-overrides-builtin precedence. Returns null if no file in any
+ * dir declares that id. Reads each candidate file from disk — only
+ * intended for on-demand UI inspection, not hot paths.
+ */
+export async function findPersonaSource(
+  id: string,
+  dirs: string | readonly string[] = DEFAULT_PERSONA_DIRS
+): Promise<PersonaSource | null> {
+  let found: PersonaSource | null = null;
+  for (const dir of normalizePersonaDirs(dirs)) {
+    let entries: string[];
+    try {
+      entries = await readdir(dir);
+    } catch (e) {
+      if (isNodeError(e) && e.code === "ENOENT") continue;
+      throw e;
+    }
+    for (const f of entries.sort()) {
+      if (!f.endsWith(".yaml") && !f.endsWith(".yml")) continue;
+      const filePath = path.join(dir, f);
+      let raw: string;
+      try {
+        raw = readFileSync(filePath, "utf-8");
+      } catch {
+        continue;
+      }
+      let parsed: unknown;
+      try {
+        parsed = parseYaml(raw);
+      } catch {
+        continue;
+      }
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed) &&
+        (parsed as { id?: unknown }).id === id
+      ) {
+        found = {
+          filePath,
+          raw,
+          isBuiltin: dir === BUILTIN_PERSONAS_DIR,
+        };
+      }
+    }
+  }
+  return found;
+}
+
 async function listPersonasInDir(dir: string): Promise<Persona[]> {
   let entries: string[];
   try {
