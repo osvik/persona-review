@@ -100,16 +100,16 @@ Entry points planned:
 |---|---|---|
 | **CLI** (`persona-review`) | ✅ done | `npx persona-review <url>` or `npm run review -- <url>` |
 | **TUI** (`persona-review --ui`) | ✅ Phase 1 + 2 + 3 | `npx persona-review --ui` or `npm run review -- --ui` |
-| **MCP server** (`persona-review-mcp`) | TBD | Mounts into Claude Code / Codex / Gemini CLI as a tool |
 
 ---
 
 ## Prerequisites
 
 - **[Node.js](https://nodejs.org/en/download) 20 or newer**
-- An **Anthropic API key** — [console.anthropic.com](https://console.anthropic.com)
-  — or an **OpenAI API key** for `--provider openai` [platform.openai.com](https://platform.openai.com/)
-  — or a **Google Gemini API key** for `--provider google` [aistudio.google.com](https://aistudio.google.com/)
+- An **API key** from one of this providers:
+  - **Anthropic** (default) — [console.anthropic.com](https://console.anthropic.com)
+  - **OpenAI** with `--provider openai` [platform.openai.com](https://platform.openai.com/)
+  - **Google Gemini** with `--provider google` [aistudio.google.com](https://aistudio.google.com/)
 - About 200 MB of disk for Chromium (installed via Playwright)
 
 ---
@@ -205,9 +205,11 @@ export ANTHROPIC_API_KEY=sk-ant...
 npx persona-review https://example.org
 ```
 
+Of course, you can alternatively use an Open AI or Google Keys.
+
 **Use:**
 
-Now you can use it by opening Docker desktop's terminal in the conainer `persona-review`:
+Now you can use it by opening **Docker desktop's terminal** in the conainer `persona-review`:
 
 ```bash
 bash
@@ -249,11 +251,9 @@ OPENAI_API_KEY: sk-...
 GEMINI_API_KEY: ...
 ```
 
-Use the same key names as the environment variables. You only need to fill in
-the providers you use.
+Use the same key names as the environment variables. You only need to fill in the providers you use.
 
-The CLI reads only the key for the selected provider; nothing else leaves your
-machine except the HTTP request to the selected LLM provider and the page-load
+The CLI reads only the key for the selected provider; nothing else leaves your machine except the HTTP request to the selected LLM provider and the page-load
 request to the target URL.
 
 Check which providers are ready, which model ids are built in, and where
