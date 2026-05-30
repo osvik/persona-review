@@ -319,17 +319,12 @@ function printHelp(defaultsPath: string = USER_DEFAULTS_PATH) {
   const help = `persona-review — AI persona feedback for non-profit web pages
 
 Usage:
+  npx persona-review --ui
   npx persona-review <url> [options]
-  npx persona-review --status
   npx persona-review --list-personas
+  npx persona-review --status
   npx persona-review --install-browsers
   npx persona-review --version
-  or
-  npm run review -- <url> [options]
-  npm run review -- --status
-  npm run review -- --list-personas
-  npm run review -- --install-browsers
-  npm run review -- --version
 
 Options:
   --persona <id>          Persona archetype id (default: ${DEFAULT_PERSONA_ID}).

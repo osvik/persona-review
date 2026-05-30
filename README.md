@@ -528,9 +528,10 @@ npm run review -- https://example.org --allow-submit --submit-data ./submit-data
 ### All flags
 
 ```
+npm run review -- --ui
 npm run review -- <url> [options]
-npm run review -- --status
 npm run review -- --list-personas
+npm run review -- --status
 npm run review -- --version
 
   --persona <id>           Persona archetype id (default: newcomer-orientation-seeker).
