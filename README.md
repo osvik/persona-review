@@ -31,6 +31,7 @@ Reactions are written in the page's own language, as a native speaker.
     - [Example output (prose)](#example-output-prose)
     - [Example output (JSON)](#example-output-json)
   - [Terminal UI (TUI)](#terminal-ui-tui)
+  - [Web UI](#web-ui)
   - [Persona file format](#persona-file-format)
   - [The persona library](#the-persona-library)
   - [Reproducibility](#reproducibility)
@@ -103,10 +104,10 @@ different goals and frustrations.
 
 Entry points planned:
 
-| Entry point | Status | How to run |
-|---|---|---|
-| **CLI** (`persona-review`) | ✅ done | `npx persona-review <url>` or `npm run review -- <url>` |
-| **TUI** (`persona-review --ui`) | ✅ done | `npx persona-review --ui` or `npm run review -- --ui` |
+| Entry point                     | Status  | How to run                                              |
+| ------------------------------- | ------- | ------------------------------------------------------- |
+| **CLI** (`persona-review`)      | ✅ done | `npx persona-review <url>` or `npm run review -- <url>` |
+| **TUI** (`persona-review --ui`) | ✅ done | `npx persona-review --ui` or `npm run review -- --ui`   |
 
 ---
 
@@ -144,7 +145,7 @@ install Chromium for a different Playwright package.
 To use you need an API key from Anthropic, Open AI or Google:
 
 ```bash
-# Use the export command to add your API key. See bellow for more info. 
+# Use the export command to add your API key. See bellow for more info.
 export ANTHROPIC_API_KEY=sk-ant...
 
 npx persona-review https://example.org/
@@ -175,12 +176,11 @@ compiles TypeScript to `dist/` and marks the CLI executable.
 To use you need an API key from Anthropic, Open AI or Google:
 
 ```bash
-# Use the export command to add your API key. See bellow for more info. 
+# Use the export command to add your API key. See bellow for more info.
 export ANTHROPIC_API_KEY=sk-ant...
 
 npm run review -- https://example.org/
 ```
-
 
 ---
 
@@ -352,7 +352,7 @@ max_actions: 20
 max_tokens: 4096
 full_page_snapshot: true
 allow_downloads: true
-allow_cross_page_navigation: false  # set true to let personas follow links to other pages
+allow_cross_page_navigation: false # set true to let personas follow links to other pages
 submit_data: /Users/me/.persona-review/submit-data.local.yaml
 ```
 
@@ -508,11 +508,11 @@ key as the label:
 
 ```yaml
 identity:
-  first_name: null            # falls back to the persona's name
+  first_name: null # falls back to the persona's name
   last_name: "PersonaReview"
   email: "persona-review+test@example.com"
   phone: "666666666"
-  dni_o_nie: "08966195J"      # custom Spain field — picked up automatically
+  dni_o_nie: "08966195J" # custom Spain field — picked up automatically
 
 address:
   line1: "Calle de las pruebas"
@@ -593,11 +593,11 @@ npm run review -- --version
 Each persona has a `device` field which determines the viewport and user
 agent:
 
-| `device` value | Viewport | User agent | Touch |
-|---|---|---|---|
-| `mobile` | 390×844 (iPhone-class) | iOS Safari 18 | yes |
-| `desktop` | 1280×800 | Chrome 126 on macOS | no |
-| `either` | resolves to desktop | Chrome 126 on macOS | no |
+| `device` value | Viewport               | User agent          | Touch |
+| -------------- | ---------------------- | ------------------- | ----- |
+| `mobile`       | 390×844 (iPhone-class) | iOS Safari 18       | yes   |
+| `desktop`      | 1280×800               | Chrome 126 on macOS | no    |
+| `either`       | resolves to desktop    | Chrome 126 on macOS | no    |
 
 Pass `--device mobile` or `--device desktop` to override the persona's
 default.
@@ -636,11 +636,11 @@ seeded. See "Reproducibility" below.)
   "summary": "...",
   "liked": ["..."],
   "confused_by": ["..."],
-  "friction": [{"where": "...", "severity": "high", "quote": "..."}],
+  "friction": [{ "where": "...", "severity": "high", "quote": "..." }],
   "abandoned_at": null,
   "accessibility_issues": ["..."],
-  "trust_signals": {"positive": ["..."], "negative": ["..."]},
-  "trace": [{"step": "...", "reaction": "..."}]
+  "trust_signals": { "positive": ["..."], "negative": ["..."] },
+  "trace": [{ "step": "...", "reaction": "..." }]
 }
 ```
 
@@ -737,6 +737,39 @@ writing to the CLI — see `AGENTS.md` for the open question.
 
 ---
 
+## Web UI
+
+A browser-based review interface is included in this project. It serves the
+static `public/` app and uses `src/server.ts` to run the review backend.
+
+Build and run it locally:
+
+```bash
+npm run build
+npm run web
+```
+
+Then open:
+
+```bash
+http://localhost:3000
+```
+
+The web UI lets you choose the target URL, persona, provider, model, and
+optional review settings in your browser. It shows live review progress,
+logs, browser screenshots, and the final persona feedback. After the review
+completes, you can ask follow-up questions in the same session.
+
+The web server uses the same API-key sources as the CLI/TUI: environment
+variables or `~/.persona-review/keys.yaml`. The `npm run web` script loads
+`.env` if present and listens on the port configured by `PORT` (default
+`3000`).
+
+If you installed from source, make sure `dist/server.js` exists by running
+`npm run build` before `npm run web`.
+
+---
+
 ## Persona file format
 
 Built-in personas live as YAML files in this package's `personas/` directory.
@@ -746,11 +779,11 @@ validated against the Zod schema in `src/persona.ts`. Example:
 
 ```yaml
 id: newcomer-orientation-seeker # unique slug
-name: Aisha                    # illustrative; LLM adapts in any language
-age: 27                        # optional
+name: Aisha # illustrative; LLM adapts in any language
+age: 27 # optional
 role: New to the cause and deciding whether to engage
-cause_engagement: casual       # neutral | casual | regular | committed
-scrutiny: low-medium           # low-medium | medium | high
+cause_engagement: casual # neutral | casual | regular | committed
+scrutiny: low-medium # low-medium | medium | high
 goals:
   - understand what this organization does in 30 seconds
   - decide whether it feels legitimate before doing anything
@@ -763,10 +796,10 @@ frustrations:
 behaviours:
   - scans the headline, first call to action, and first proof point before reading
   - hesitates if commitment is requested before impact or legitimacy is clear
-tech_confidence: medium        # low-medium | medium | medium-high (no extremes)
-device: either                 # mobile | desktop | either
-accessibility: []              # e.g. [larger-text, screen-reader]
-reading_level: general         # general | detailed
+tech_confidence: medium # low-medium | medium | medium-high (no extremes)
+device: either # mobile | desktop | either
+accessibility: [] # e.g. [larger-text, screen-reader]
+reading_level: general # general | detailed
 voice: curious, open-minded, easily discouraged by unclear entry points
 ```
 
@@ -798,20 +831,20 @@ a practical reason to use press material accurately. The fundraising and visual
 design specialists are expert lenses for teams that want a more professional
 critique.
 
-| id | who | device | tech | engagement | scrutiny |
-|---|---|---|---|---|---|
-| `newcomer-orientation-seeker` | Aisha — new to the cause and deciding whether to engage | either | medium | casual | low-medium |
-| `time-pressed-task-completer` | Sofia — arrives with intent and wants to finish quickly | either | medium | regular | low-medium |
-| `regular-supporter-donor` | Daniel — gives occasionally and may consider recurring support | either | medium | regular | medium |
-| `evidence-and-accountability-checker` | Mei — checks evidence, transparency, and accountability | either | medium-high | regular | high |
-| `deadline-journalist` | Nadia — needs accurate, usable material on deadline | either | medium-high | neutral | high |
-| `advocate-and-sharer` | Femi — wants to act, share, and bring others in | either | medium-high | committed | medium |
-| `plain-language-reader` | Anna — prefers everyday words | either | medium | regular | medium |
-| `accessibility-focused-reader` | Yusuf — uses assistive and adaptive settings | either | medium | regular | medium |
-| `help-seeker` | Rosa — needs support for themselves or someone close | either | medium | regular | medium |
-| `legacy-and-planned-giving-prospect` | Margaret — considers major or planned giving | either | low-medium | committed | high |
-| `marketing-fundraising-specialist` | Ines — reviews fundraising and engagement pages | either | medium-high | committed | high |
-| `visual-design-specialist` | Kenji — reviews visual composition | either | medium-high | committed | high |
+| id                                    | who                                                            | device | tech        | engagement | scrutiny   |
+| ------------------------------------- | -------------------------------------------------------------- | ------ | ----------- | ---------- | ---------- |
+| `newcomer-orientation-seeker`         | Aisha — new to the cause and deciding whether to engage        | either | medium      | casual     | low-medium |
+| `time-pressed-task-completer`         | Sofia — arrives with intent and wants to finish quickly        | either | medium      | regular    | low-medium |
+| `regular-supporter-donor`             | Daniel — gives occasionally and may consider recurring support | either | medium      | regular    | medium     |
+| `evidence-and-accountability-checker` | Mei — checks evidence, transparency, and accountability        | either | medium-high | regular    | high       |
+| `deadline-journalist`                 | Nadia — needs accurate, usable material on deadline            | either | medium-high | neutral    | high       |
+| `advocate-and-sharer`                 | Femi — wants to act, share, and bring others in                | either | medium-high | committed  | medium     |
+| `plain-language-reader`               | Anna — prefers everyday words                                  | either | medium      | regular    | medium     |
+| `accessibility-focused-reader`        | Yusuf — uses assistive and adaptive settings                   | either | medium      | regular    | medium     |
+| `help-seeker`                         | Rosa — needs support for themselves or someone close           | either | medium      | regular    | medium     |
+| `legacy-and-planned-giving-prospect`  | Margaret — considers major or planned giving                   | either | low-medium  | committed  | high       |
+| `marketing-fundraising-specialist`    | Ines — reviews fundraising and engagement pages                | either | medium-high | committed  | high       |
+| `visual-design-specialist`            | Kenji — reviews visual composition                             | either | medium-high | committed  | high       |
 
 Run `npm run review -- --list-personas` for the same list with full role
 descriptions.

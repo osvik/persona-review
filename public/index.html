@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Persona Review — Interactive AI Web Audit</title>
+  <meta name="description"
+    content="AI persona feedback tool for web pages. Visit pages as simulated personas and get reactions, friction points, and accessibility issues." />
+  <link rel="stylesheet" href="index.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
+  <!-- Load Inter font via Bunny Fonts (privacy-friendly alternative) -->
+  <link rel="preconnect" href="https://fonts.bunny.net" />
+  <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600&display=swap" rel="stylesheet" />
+</head>
+
+<body>
+  <!-- Header Floating Nav -->
+  <header class="nav-bar-on-mesh">
+    <div class="nav-container">
+      <div class="logo">
+        <span class="logo-bold">Persona</span><span class="logo-light">Review</span>
+        <span class="logo-badge">Web UI</span>
+      </div>
+      <div class="nav-status" id="provider-badges">
+        <!-- Badges will be inserted by JS -->
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main>
+    <!-- Hero / Setup Section -->
+    <section class="hero-section">
+      <!-- Stripe Signature Gradient Mesh Backdrop -->
+      <div class="gradient-mesh-container">
+        <div class="gradient-mesh"></div>
+      </div>
+
+      <div class="content-container">
+        <div class="hero-text">
+          <h1>Experience your website through the eyes of others.</h1>
+          <p class="hero-lead">
+            Enter a URL, select a simulated persona archetype, and watch them
+            navigate, critique, and audit your web interface in real time.
+          </p>
+        </div>
+
+        <!-- Setup Form Card -->
+        <div class="card-pricing setup-card">
+          <form id="setup-form" onsubmit="return false;">
+            <div class="form-grid">
+              <!-- URL Input -->
+              <div class="form-group full-width">
+                <label for="input-url">Target Webpage URL</label>
+                <input type="url" id="input-url" placeholder="https://example.org/donate" required />
+              </div>
+
+              <!-- Persona Selection -->
+              <div class="form-group">
+                <label for="select-persona">Persona Archetype</label>
+                <select id="select-persona" required>
+                  <option value="" disabled selected>
+                    Loading personas...
+                  </option>
+                </select>
+              </div>
+
+              <!-- Provider AI Selection -->
+              <div class="form-group">
+                <label for="select-provider">Provider AI</label>
+                <select id="select-provider">
+                  <!-- Will be loaded from config -->
+                </select>
+              </div>
+
+              <!-- Model Selection -->
+              <div class="form-group">
+                <label for="select-model">AI Model</label>
+                <select id="select-model">
+                  <!-- Will be loaded dynamically based on provider -->
+                </select>
+              </div>
+
+              <!-- Options Checkboxes -->
+              <div class="form-group check-group">
+                <label>Capabilities</label>
+                <div class="checkbox-row">
+                  <label class="checkbox-label" for="check-submit">
+                    <input type="checkbox" id="check-submit" />
+                    <span>Allow Form Submit</span>
+                  </label>
+                  <label class="checkbox-label" for="check-nav">
+                    <input type="checkbox" id="check-nav" />
+                    <span>Allow Navigation</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Selected Persona Quick Info (hidden initially) -->
+            <div id="persona-summary-box" class="persona-info-box hidden">
+              <div class="persona-info-header">
+                <strong id="persona-info-name"></strong>
+                <span id="persona-info-role"></span>
+              </div>
+              <div class="persona-info-metrics">
+                <span>Device: <strong id="persona-info-device"></strong></span>
+                <span>Tech Confidence: <strong id="persona-info-tech"></strong></span>
+                <span>Cause Engagement:
+                  <strong id="persona-info-engagement"></strong></span>
+                <span>Scrutiny: <strong id="persona-info-scrutiny"></strong></span>
+              </div>
+              <div class="persona-info-desc" id="persona-info-goals"></div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-actions">
+              <button type="submit" id="btn-start-review" class="button-primary-pill">
+                Start AI Audit
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Run Progress & Viewport Section -->
+    <section id="run-section" class="run-section hidden">
+      <div class="content-container">
+        <h2 class="section-title">Audit in Progress</h2>
+        <div class="run-grid">
+          <!-- Terminal / Logs Panel -->
+          <div class="run-panel-logs">
+            <div class="panel-header">
+              <h3>Agent Thinking Process</h3>
+              <span class="status-indicator running" id="agent-pulse">Active</span>
+            </div>
+            <div class="log-terminal" id="log-terminal">
+              <!-- Logs will scroll here -->
+            </div>
+            <div class="status-bar" id="agent-status-bar">
+              Initializing...
+            </div>
+            <div class="status-bar hidden" id="agent-cost-bar">
+              LLM cost: $0.00
+            </div>
+          </div>
+
+          <!-- Viewport Panel -->
+          <div class="run-panel-viewport">
+            <div class="panel-header">
+              <h3>Live Browser Viewport</h3>
+              <span class="viewport-dimensions" id="viewport-dims">1280 x 800</span>
+            </div>
+            <div class="viewport-wrapper">
+              <div class="viewport-device-container">
+                <img id="viewport-screenshot" src="" alt="Live screenshot of target website"
+                  class="viewport-image placeholder" />
+                <div class="viewport-overlay" id="viewport-overlay">
+                  <div class="spinner"></div>
+                  <span id="viewport-overlay-text">Awaiting Page Load...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Audit Results Section -->
+    <section id="results-section" class="results-section hidden">
+      <div class="content-container">
+        <div class="results-header">
+          <div class="results-header-left">
+            <span class="pill-tag-soft">Audit Results</span>
+            <h2 class="section-title" id="results-title-header">
+              Persona Feedback Report
+            </h2>
+            <p class="section-lead" id="results-url-sub"></p>
+            <p class="section-lead" id="results-cost"></p>
+          </div>
+          <button id="btn-download-pdf" class="button-secondary-pill hidden" type="button">
+            Download PDF
+          </button>
+        </div>
+
+        <!-- Summary Banner (Stripe Cream Band) -->
+        <div class="card-cream-band results-summary-card">
+          <div class="quote-icon">“</div>
+          <div class="summary-text" id="results-summary">
+            <!-- Summary prose goes here -->
+          </div>
+          <div class="results-persona-author">
+            <strong id="results-author-name"></strong>,
+            <span id="results-author-role"></span>
+          </div>
+        </div>
+
+        <!-- Feedback Grid -->
+        <div class="results-grid">
+          <!-- Liked & Confused By Column -->
+          <div class="grid-card double-width">
+            <div class="card-columns">
+              <!-- Liked Section -->
+              <div class="column-half">
+                <h3 class="column-title success">Liked Elements</h3>
+                <ul class="clean-list" id="results-liked">
+                  <!-- JS inserts -->
+                </ul>
+              </div>
+              <!-- Confused By Section -->
+              <div class="column-half">
+                <h3 class="column-title warning">Confusing Elements</h3>
+                <ul class="clean-list" id="results-confused">
+                  <!-- JS inserts -->
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trust Signals Card -->
+          <div class="grid-card">
+            <h3 class="card-title">Trust Signals</h3>
+            <div class="trust-lists">
+              <div class="trust-list-group">
+                <h4 class="trust-sub-title positive">Positive Signals</h4>
+                <ul class="clean-list" id="results-trust-positive">
+                  <!-- JS inserts -->
+                </ul>
+              </div>
+              <div class="trust-list-group">
+                <h4 class="trust-sub-title negative">Negative Signals</h4>
+                <ul class="clean-list" id="results-trust-negative">
+                  <!-- JS inserts -->
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Accessibility Card -->
+          <div class="grid-card">
+            <h3 class="card-title">Accessibility Issues</h3>
+            <ul class="clean-list" id="results-accessibility">
+              <!-- JS inserts -->
+            </ul>
+          </div>
+
+          <!-- Friction Points Card (Full Width) -->
+          <div class="grid-card full-width">
+            <h3 class="card-title">Friction Points</h3>
+            <div class="friction-cards-container" id="results-friction">
+              <!-- JS inserts -->
+            </div>
+          </div>
+
+          <!-- Action Trace Card (Full Width) -->
+          <div class="grid-card full-width">
+            <h3 class="card-title">User Interaction Trace</h3>
+            <div class="trace-timeline" id="results-trace">
+              <!-- JS inserts -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Q&A Follow-up Chat Section -->
+    <section id="chat-section" class="chat-section hidden">
+      <div class="content-container">
+        <h2 class="section-title">Ask Follow-up Questions</h2>
+        <p class="section-lead">
+          Keep chatting with the simulated persona. Ask them to explain their
+          reactions, explore other parts of the interface, or ask how they
+          would behave under different conditions.
+        </p>
+
+        <div class="chat-wrapper card-feature-light">
+          <!-- Chat Messages Area -->
+          <div class="chat-history" id="chat-history">
+            <div class="message system">
+              <div class="message-content">
+                Conversation with <strong id="chat-persona-name"></strong> is
+                active. You can type follow-up questions below.
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input Controls -->
+          <form id="chat-form" onsubmit="return false;" class="chat-input-container">
+            <input type="text" id="chat-input" placeholder="Ask Lucia why she was confused by the layout..." required
+              autocomplete="off" />
+            <button type="submit" id="btn-chat-send" class="button-primary-pill">
+              Send Message
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+
+
+  <script src="index.js"></script>
+</body>
+
+</html>
