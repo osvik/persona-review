@@ -37,6 +37,7 @@ Reactions are written in the page's own language, as a native speaker.
   - [Scope and safety](#scope-and-safety)
   - [Development](#development)
     - [Build it](#build-it)
+    - [About the TUI](#about-the-tui)
 
 ---
 
@@ -81,6 +82,12 @@ different goals and frustrations.
 ## Architecture
 
 ```
+┌─────────────────┐
+│  TUI            │
+│  (--ui / --tui) │
+└────────┬────────┘
+         │
+         ▼
 ┌─────────────────┐        ┌──────────────────┐        ┌──────────────┐
 │  CLI            │  ───▶  │  Playwright      │  ───▶  │  Target URL  │
 │  (persona-      │        │  headless        │        │  (public     │
@@ -99,7 +106,7 @@ Entry points planned:
 | Entry point | Status | How to run |
 |---|---|---|
 | **CLI** (`persona-review`) | ✅ done | `npx persona-review <url>` or `npm run review -- <url>` |
-| **TUI** (`persona-review --ui`) | ✅ Phase 1 + 2 + 3 | `npx persona-review --ui` or `npm run review -- --ui` |
+| **TUI** (`persona-review --ui`) | ✅ done | `npx persona-review --ui` or `npm run review -- --ui` |
 
 ---
 
@@ -891,6 +898,26 @@ src/
     anthropic.ts  # Anthropic Messages adapter.
     google.ts     # Google Gemini generateContent adapter.
     openai.ts     # OpenAI Responses API adapter.
+  tui/
+    index.tsx     # TUI entry: mounts the Ink app, wires CLI options.
+    app.tsx       # Top-level Ink component: routing between screens.
+    state.ts      # TUI state store: form fields, review status, settings.
+    theme.ts      # Color definitions shared across TUI components.
+    validate.ts   # TUI-specific input validation helpers.
+    components/
+      CostLine.tsx   # Cost display component during/following review.
+      Feedback.tsx   # Rendered persona feedback output.
+      KeyHint.tsx    # Keyboard shortcut hint bar.
+      StatusLog.tsx  # Live status lines during review execution.
+    screens/
+      apiKeys.tsx          # API key management screen.
+      form.tsx             # Main URL/persona/device input form.
+      personaInspector.tsx # Raw YAML persona file viewer.
+      personaList.tsx      # Persona library browser with descriptions.
+      repl.tsx             # Follow-up chat screen.
+      review.tsx           # Running review progress and results display.
+      settings.tsx         # Provider/model/toggles/settings screen.
+      submitConsent.tsx    # --allow-submit consent prompt screen.
 personas/
   *.yaml          # 12 archetype files; drop your own in here too
 submit-data.yaml  # Default shared test identity template for --allow-submit
@@ -899,3 +926,16 @@ package.json      # Package metadata, CLI bin, npm scripts, dependencies.
 tsconfig.json     # TypeScript compiler settings.
 LICENSE           # GNU Affero General Public License v3.0.
 ```
+
+### About the TUI
+
+The TUI is built with **[Ink](https://github.com/vadimdemedes/ink) 5.2.1** (React for
+terminals) and **React 18.3.1**. Each screen in `src/tui/screens/` is an Ink
+component rendered to a `<Box>`-based layout; state flows through a plain
+`zustand`-style store in `state.ts`. The [ink-select-input](https://github.com/vadimdemedes/ink-select-input)
+and [ink-text-input](https://github.com/vadimdemedes/ink-text-input) packages
+handle menus and masked text fields. Components use Ink's `useInput` hook for
+custom keybindings and `useStdin` / `useStdout` for raw terminal access. The
+TUI is launched by `cli.ts` when `--ui` or `--tui` is passed — it delegates to
+`tui/index.tsx` which mounts the Ink app, then falls back to the CLI review
+path on exit.
