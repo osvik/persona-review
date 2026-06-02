@@ -742,6 +742,11 @@ writing to the CLI — see `AGENTS.md` for the open question.
 A browser-based review interface is included in this project. It serves the
 static `public/` app and uses `src/server.ts` to run the review backend.
 
+> **Warning:** At the moment, the web server provides **no authentication**. Anyone 
+> who can access it can use it with **your API keys**. Do not expose the web server to
+> the public internet or use it in shared environments. It is intended for local,
+> single-user development only.
+
 Build and run it locally:
 
 ```bash
