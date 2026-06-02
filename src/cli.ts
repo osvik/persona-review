@@ -42,6 +42,9 @@ import {
 } from "./submit-data.js";
 import { lookupApiKey, USER_KEYS_PATH } from "./keys.js";
 import type { Provider } from "./llm/types.js";
+import { spawn } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 interface Args extends UserDefaults {
   command:
@@ -51,7 +54,8 @@ interface Args extends UserDefaults {
     | "help"
     | "version"
     | "install-browsers"
-    | "ui";
+    | "ui"
+    | "web";
   url?: string;
 }
 
@@ -117,6 +121,8 @@ function parseArgs(argv: string[]): ParsedArgs {
       command = "status";
     } else if (a === "--ui" || a === "--tui") {
       command = "ui";
+    } else if (a === "--web") {
+      command = "web";
     } else if (a === "--list-personas") {
       command = "list-personas";
     } else if (a === "--json") {
@@ -319,7 +325,10 @@ function printHelp(defaultsPath: string = USER_DEFAULTS_PATH) {
   const help = `persona-review — AI persona feedback for non-profit web pages
 
 Usage:
+
   npx persona-review --ui
+  npx persona-review --web
+
   npx persona-review <url> [options]
   npx persona-review --list-personas
   npx persona-review --status
@@ -477,6 +486,32 @@ async function main() {
       console.error(`persona-review TUI failed: ${msg}`);
       process.exit(1);
     }
+    return;
+  }
+
+  if (parsed.command === "web") {
+    if (parsed.overrides.json) {
+      console.error("Error: --web cannot be combined with --json.");
+      process.exit(1);
+    }
+    console.error("Starting web server...");
+    const serverPath = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "dist",
+      "server.js"
+    );
+    const child = spawn("node", [serverPath], {
+      stdio: "inherit",
+      env: { ...process.env },
+    });
+    child.on("error", (err) => {
+      console.error(`Web server failed to start: ${err.message}`);
+      process.exit(1);
+    });
+    child.on("exit", (code) => {
+      process.exit(code ?? 0);
+    });
     return;
   }
 

@@ -742,16 +742,15 @@ writing to the CLI — see `AGENTS.md` for the open question.
 A browser-based review interface is included in this project. It serves the
 static `public/` app and uses `src/server.ts` to run the review backend.
 
-> **Warning:** At the moment, the web server provides **no authentication**. Anyone 
-> who can access it can use it with **your API keys**. Do not expose the web server to
+> **Warning:** The web server provides **no authentication**. Anyone who can
+> access it can use it with **your API keys**. Do not expose the web server to
 > the public internet or use it in shared environments. It is intended for local,
 > single-user development only.
 
-Build and run it locally:
+Run the web server locally:
 
 ```bash
-npm run build
-npm run web
+npx persona-review --web
 ```
 
 Then open:
@@ -766,12 +765,11 @@ logs, browser screenshots, and the final persona feedback. After the review
 completes, you can ask follow-up questions in the same session.
 
 The web server uses the same API-key sources as the CLI/TUI: environment
-variables or `~/.persona-review/keys.yaml`. The `npm run web` script loads
-`.env` if present and listens on the port configured by `PORT` (default
-`3000`).
+variables or `~/.persona-review/keys.yaml`. The server loads `.env` if
+present and listens on the port configured by `PORT` (default `3000`).
 
-If you installed from source, make sure `dist/server.js` exists by running
-`npm run build` before `npm run web`.
+If running from source, make sure `dist/server.js` exists by running
+`npm run build` first.
 
 ---
 
