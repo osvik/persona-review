@@ -5,6 +5,8 @@ pages**. You give it a URL and a persona; it visits the page and tells you
 what that persona noticed, liked, found confusing, and where they'd give up.
 Reactions are written in the page's own language, as a native speaker.
 
+**&gt;&gt;&gt; [Go to the website](https://osvik.codeberg.page/persona-review/) &lt;&lt;&lt;**
+
 - [persona-review](#persona-review)
   - [What it does today](#what-it-does-today)
   - [Architecture](#architecture)
