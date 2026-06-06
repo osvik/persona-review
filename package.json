@@ -22,7 +22,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc && chmod +x dist/cli.js",
+    "build": "node scripts/build.mjs",
     "prepublishOnly": "npm run build",
     "review": "node dist/cli.js",
     "start": "node dist/cli.js",
