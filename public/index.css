@@ -1119,6 +1119,30 @@ select:focus {
   line-height: 1.5;
 }
 
+/* Footer License */
+.footer-license {
+  border-top: 1px solid var(--hairline);
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.footer-license p {
+  font-size: 12px;
+  color: var(--ink-mute);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.footer-license a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.footer-license a:hover {
+  text-decoration: underline;
+}
+
 /* Helpers */
 .hidden {
   display: none !important;
