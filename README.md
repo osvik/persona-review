@@ -924,9 +924,12 @@ src/
                   #   --allow-submit consent, JSON/prose output, REPL.
   cost.ts         # Per-provider/model pricing and CostTracker cap enforcement.
   defaults.ts     # User defaults file creation/loading and option validation.
+  keys.ts         # API key lookup: environment variables and ~/.persona-review/keys.yaml.
   persona.ts      # Persona Zod schema + YAML loader/listing helpers.
   review.ts       # Feedback/follow-up schemas, tool schemas, and system prompt
                   #   builder including conditional submission policy.
+  server.ts       # Express web server: REST API routes (/api/config, /api/review/*),
+                  #   static file serving for public/, and session management.
   submit-data.ts  # Test-identity Zod schema + loader; resolves first_name to
                   #   the persona's name when YAML leaves it null.
   user-config.ts  # Cross-platform paths for ~/.persona-review resources.
@@ -960,6 +963,14 @@ personas/
   *.yaml          # 12 archetype files; drop your own in here too
 submit-data.yaml  # Default shared test identity template for --allow-submit
                   #   copy it and pass the copy with --submit-data
+public/
+  index.html      # Web UI entry point.
+  index.js        # Frontend JavaScript: UI logic, API calls, polling, PDF export.
+  index.css       # Stylesheet (Stripe-inspired design theme).
+.env              # Local environment variables (PORT, API keys) — not committed.
+.env.example      # Template documenting available env vars.
+scripts/
+  build.mjs       # Build script: runs tsc to compile src/ to dist/.
 package.json      # Package metadata, CLI bin, npm scripts, dependencies.
 tsconfig.json     # TypeScript compiler settings.
 LICENSE           # GNU Affero General Public License v3.0.
