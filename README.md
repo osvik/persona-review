@@ -106,10 +106,10 @@ different goals and frustrations.
          └──────────────────┘        └──────────────┘
                     │ persona + snapshot
                     ▼
-         ┌─────────────────┐        ┌──────────────────┐
-         │  LLM provider   │  ◀──▶  │  Anthropic API   │
-         │  adapter        │        │  or OpenAI API   │
-         └─────────────────┘        └──────────────────┘
+         ┌─────────────────┐        ┌──────────────────────────┐
+         │  LLM provider   │  ◀──▶  │  Anthropic / OpenAI /    │
+         │  adapter        │        │  Google Gemini API       │
+         └─────────────────┘        └──────────────────────────┘
 ```
 
 Entry points:
