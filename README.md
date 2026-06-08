@@ -85,31 +85,40 @@ different goals and frustrations.
 ## Architecture
 
 ```
-┌─────────────────┐
-│  TUI            │
-│  (--ui / --tui) │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐        ┌──────────────────┐        ┌──────────────┐
-│  CLI            │  ───▶  │  Playwright      │  ───▶  │  Target URL  │
-│  (persona-      │        │  headless        │        │  (public     │
-│   review)       │  ◀──   │  Chromium        │  ◀──   │   page)      │
-└────────┬────────┘  snap  └──────────────────┘        └──────────────┘
-         │ persona + snapshot
-         ▼
-┌─────────────────┐        ┌──────────────────┐
-│  LLM provider   │  ◀──▶  │  Anthropic API   │
-│  adapter        │        │  or OpenAI API   │
-└─────────────────┘        └──────────────────┘
+┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
+│  Web UI         │   │  TUI            │   │  CLI            │
+│  (browser)      │   │  (--ui / --tui) │   │  (persona-      │
+└────────┬────────┘   └────────┬────────┘   │   review)       │
+         │                     │            └────────┬────────┘
+         ▼                     │                     │
+┌─────────────────┐            │                     │
+│  HTTP server    │            │                     │
+│  (server.ts)    │            │                     │
+└────────┬────────┘            │                     │
+         │                     │                     │
+         └──────────┬──────────┴─────────────────────┘
+                    │
+                    ▼
+         ┌──────────────────┐        ┌──────────────┐
+         │  Playwright      │  ───▶  │  Target URL  │
+         │  headless        │        │  (public     │
+         │  Chromium        │  ◀──   │   page)      │
+         └──────────────────┘        └──────────────┘
+                    │ persona + snapshot
+                    ▼
+         ┌─────────────────┐        ┌──────────────────┐
+         │  LLM provider   │  ◀──▶  │  Anthropic API   │
+         │  adapter        │        │  or OpenAI API   │
+         └─────────────────┘        └──────────────────┘
 ```
 
-Entry points planned:
+Entry points:
 
 | Entry point                     | Status  | How to run                                              |
 | ------------------------------- | ------- | ------------------------------------------------------- |
 | **CLI** (`persona-review`)      | ✅ done | `npx persona-review <url>` or `npm run review -- <url>` |
 | **TUI** (`persona-review --ui`) | ✅ done | `npx persona-review --ui` or `npm run review -- --ui`   |
+| **Web UI** (`persona-review --web`) | ✅ done | `npx persona-review --web` or `npm run review -- --web` |
 
 ---
 
@@ -147,8 +156,12 @@ install Chromium for a different Playwright package.
 To use you need an API key from Anthropic, Open AI or Google:
 
 ```bash
-# Use the export command to add your API key. See bellow for more info.
+# macOS / Linux
 export ANTHROPIC_API_KEY=sk-ant...
+# Windows (PowerShell)
+$env:ANTHROPIC_API_KEY="sk-ant..."
+# Windows (Command Prompt)
+set ANTHROPIC_API_KEY=sk-ant...
 
 npx persona-review https://example.org/
 ```
@@ -178,8 +191,12 @@ compiles TypeScript to `dist/` and marks the CLI executable.
 To use you need an API key from Anthropic, Open AI or Google:
 
 ```bash
-# Use the export command to add your API key. See bellow for more info.
+# macOS / Linux
 export ANTHROPIC_API_KEY=sk-ant...
+# Windows (PowerShell)
+$env:ANTHROPIC_API_KEY="sk-ant..."
+# Windows (Command Prompt)
+set ANTHROPIC_API_KEY=sk-ant...
 
 npm run review -- https://example.org/
 ```
@@ -233,20 +250,37 @@ npx persona-review http://example.org
 By default the CLI calls Anthropic's API directly. [Create your API key](https://platform.claude.com/settings/workspaces/default/keys) and add it to the console with:
 
 ```bash
+# macOS / Linux
 export ANTHROPIC_API_KEY=sk-ant-...
+# Windows (PowerShell)
+$env:ANTHROPIC_API_KEY="sk-ant-..."
+# Windows (Command Prompt)
+set ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 To use **OpenAI** instead, [create your API key](https://platform.openai.com/api-keys) set `OPENAI_API_KEY` and pass `--provider openai`:
 
 ```bash
+# macOS / Linux
 export OPENAI_API_KEY=sk-...
+# Windows (PowerShell)
+$env:OPENAI_API_KEY="sk-..."
+# Windows (Command Prompt)
+set OPENAI_API_KEY=sk-...
+
 npm run review -- https://example.org --provider openai
 ```
 
 To use **Google Gemini** instead, [create your API key](https://aistudio.google.com/api-keys), set `GEMINI_API_KEY`, and pass `--provider google`:
 
 ```bash
+# macOS / Linux
 export GEMINI_API_KEY=...
+# Windows (PowerShell)
+$env:GEMINI_API_KEY="..."
+# Windows (Command Prompt)
+set GEMINI_API_KEY=...
+
 npm run review -- https://example.org --provider google
 ```
 
