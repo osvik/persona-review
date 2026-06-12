@@ -66,13 +66,10 @@ interface ParsedArgs {
 }
 
 interface PlaywrightRegistryModule {
-  installBrowsersForNpmInstall(browsers: string[]): Promise<unknown>;
   registry: {
-    resolveBrowsers(
-      aliases: string[],
-      options: { shell?: "no" | "only" | undefined }
-    ): unknown[];
+    findExecutable(name: string): unknown | undefined;
     installDeps(executables: unknown[], dryRun: boolean): Promise<unknown>;
+    install(executables: unknown[]): Promise<unknown>;
   };
 }
 
@@ -278,19 +275,31 @@ function playwrightRegistry(): PlaywrightRegistryModule {
 
 async function installBrowsers(): Promise<void> {
   const playwright = playwrightRegistry();
+  const executables = [requiredPlaywrightExecutable(playwright, "chromium")];
+  if (process.platform === "win32") {
+    executables.push(requiredPlaywrightExecutable(playwright, "winldd"));
+  }
+
   if (process.platform === "linux") {
     console.error("Installing Linux host dependencies for Chromium...");
-    const executables = playwright.registry.resolveBrowsers(["chromium"], {});
     await playwright.registry.installDeps(executables, false);
   }
 
   console.error(
     "Installing Chromium for the Playwright version bundled with persona-review..."
   );
-  await playwright.installBrowsersForNpmInstall([
-    "chromium",
-    "chromium-headless-shell",
-  ]);
+  await playwright.registry.install(executables);
+}
+
+function requiredPlaywrightExecutable(
+  playwright: PlaywrightRegistryModule,
+  name: string
+): unknown {
+  const executable = playwright.registry.findExecutable(name);
+  if (!executable) {
+    throw new Error(`Cannot install ${name}`);
+  }
+  return executable;
 }
 
 function isMissingPlaywrightBrowserError(error: unknown): boolean {

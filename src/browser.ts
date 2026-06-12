@@ -100,7 +100,7 @@ export class BrowserSession {
 
   async open(url: string): Promise<{ loadMs: number }> {
     const start = Date.now();
-    this.browser = await chromium.launch();
+    this.browser = await chromium.launch({ channel: "chromium" });
     this.context = await this.browser.newContext({
       viewport: this.profile.viewport,
       deviceScaleFactor: this.profile.deviceScaleFactor,
