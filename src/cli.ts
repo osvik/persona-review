@@ -1,7 +1,10 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
-import { cp, mkdir, rm } from "node:fs/promises";
+import { createWriteStream, existsSync, readFileSync } from "node:fs";
+import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import os from "node:os";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import readline from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import {
@@ -45,8 +48,6 @@ import { lookupApiKey, USER_KEYS_PATH } from "./keys.js";
 import type { Provider } from "./llm/types.js";
 import {
   cloudShellPersistentBrowserPath,
-  cloudShellTmpBrowserPath,
-  configurePlaywrightCloudShellInstallEnvironment,
   configurePlaywrightEnvironment,
   shouldUseManagedCloudShellBrowserPath,
 } from "./playwright-env.js";
@@ -73,6 +74,12 @@ interface ParsedArgs {
   overrides: Partial<UserDefaults>;
 }
 
+interface PlaywrightExecutable {
+  directory: string;
+  executablePath(): string | undefined;
+  downloadURLs?: string[];
+}
+
 interface PlaywrightRegistryModule {
   installBrowsersForNpmInstall(browsers: string[]): Promise<unknown>;
   registry: {
@@ -81,6 +88,7 @@ interface PlaywrightRegistryModule {
       options: { shell?: "no" | "only" | undefined }
     ): unknown[];
     installDeps(executables: unknown[], dryRun: boolean): Promise<unknown>;
+    findExecutable(name: string): PlaywrightExecutable;
   };
 }
 
@@ -286,10 +294,7 @@ function playwrightRegistry(): PlaywrightRegistryModule {
 }
 
 async function installBrowsers(): Promise<void> {
-  if (
-    shouldUseManagedCloudShellBrowserPath() &&
-    !process.env.PLAYWRIGHT_BROWSERS_PATH
-  ) {
+  if (shouldUseManagedCloudShellBrowserPath()) {
     await installCloudShellBrowsers();
     return;
   }
@@ -314,27 +319,125 @@ async function installBrowsers(): Promise<void> {
   }
 }
 
+// Google Cloud Shell runs inside a gVisor sandbox where Playwright's bundled
+// zip extractor hangs partway through extraction: the download completes, then
+// it stalls on the first large file and never finishes. We therefore download
+// the browser archive ourselves and extract it with the system `unzip`, which
+// is unaffected. We also write straight to the persistent ext4 $HOME cache
+// (the only filesystem that survives Cloud Shell restarts), so there is no
+// temp-dir staging or copy step.
 async function installCloudShellBrowsers(): Promise<void> {
-  configurePlaywrightCloudShellInstallEnvironment();
+  if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
+    process.env.PLAYWRIGHT_BROWSERS_PATH = cloudShellPersistentBrowserPath();
+  }
   const playwright = playwrightRegistryWithoutEnvironmentChanges();
 
   console.error("Installing Linux host dependencies for Chromium...");
-  const executables = playwright.registry.resolveBrowsers(["chromium"], {
+  const depExecutables = playwright.registry.resolveBrowsers(["chromium"], {
     shell: "only",
   });
-  await playwright.registry.installDeps(executables, false);
+  await playwright.registry.installDeps(depExecutables, false);
 
   console.error(
     "Installing Chromium for the Playwright version bundled with persona-review..."
   );
-  await playwright.installBrowsersForNpmInstall(["chromium-headless-shell"]);
+  await installBrowserViaSystemUnzip(playwright, "chromium-headless-shell");
+}
 
-  const tmpPath = cloudShellTmpBrowserPath();
-  const persistentPath = cloudShellPersistentBrowserPath();
-  console.error(`Saving Chromium browser cache to ${persistentPath}...`);
-  await mkdir(path.dirname(persistentPath), { recursive: true });
-  await rm(persistentPath, { recursive: true, force: true });
-  await cp(tmpPath, persistentPath, { recursive: true });
+async function installBrowserViaSystemUnzip(
+  playwright: PlaywrightRegistryModule,
+  browserName: string
+): Promise<void> {
+  const executable = playwright.registry.findExecutable(browserName);
+  const { directory } = executable;
+  const markerPath = path.join(directory, "INSTALLATION_COMPLETE");
+
+  if (existsSync(markerPath)) {
+    console.error(`Chromium is already installed at ${directory}.`);
+    return;
+  }
+
+  const downloadURLs = executable.downloadURLs ?? [];
+  if (downloadURLs.length === 0) {
+    throw new Error(
+      `No download URL is available for ${browserName} in this Playwright build.`
+    );
+  }
+
+  const tmpDir = await mkdtemp(
+    path.join(os.tmpdir(), "persona-review-chromium-")
+  );
+  const zipPath = path.join(tmpDir, "chromium.zip");
+  try {
+    await downloadArchive(downloadURLs, zipPath);
+    await rm(directory, { recursive: true, force: true });
+    await mkdir(directory, { recursive: true });
+    console.error("Extracting Chromium with system unzip...");
+    await extractWithSystemUnzip(zipPath, directory);
+    const binary = executable.executablePath();
+    if (binary) {
+      await chmod(binary, 0o755);
+    }
+    await writeFile(markerPath, "");
+    console.error(`Chromium installed at ${directory}.`);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+}
+
+async function downloadArchive(
+  urls: string[],
+  destination: string
+): Promise<void> {
+  let lastError: unknown;
+  for (const url of urls) {
+    try {
+      console.error(`Downloading Chromium from ${url}...`);
+      const response = await fetch(url);
+      if (!response.ok || !response.body) {
+        throw new Error(`server returned HTTP ${response.status}`);
+      }
+      await pipeline(
+        Readable.fromWeb(
+          response.body as Parameters<typeof Readable.fromWeb>[0]
+        ),
+        createWriteStream(destination)
+      );
+      return;
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`  download failed: ${message}`);
+    }
+  }
+  const message =
+    lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(`Could not download Chromium from any mirror: ${message}`);
+}
+
+function extractWithSystemUnzip(
+  zipPath: string,
+  destination: string
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("unzip", ["-q", "-o", zipPath, "-d", destination], {
+      stdio: "inherit",
+    });
+    child.on("error", (error) => {
+      reject(
+        new Error(
+          `Could not run 'unzip' (install it with 'sudo apt-get install -y unzip'): ${error.message}`
+        )
+      );
+    });
+    child.on("exit", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`unzip exited with code ${code ?? "unknown"}`));
+      }
+    });
+  });
 }
 
 function playwrightRegistryWithoutEnvironmentChanges(): PlaywrightRegistryModule {

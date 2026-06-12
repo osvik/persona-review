@@ -153,11 +153,13 @@ needs. Do not use plain
 `npx playwright install chromium` for this npm/npx install method; it can
 install Chromium for a different Playwright package.
 
-In Google Cloud Shell, persona-review extracts Playwright's browser in
-`/tmp/persona-review-ms-playwright`, then copies the completed browser cache to
-`$HOME/.cache/persona-review-ms-playwright` so it persists across Cloud Shell
-restarts. Cloud Shell's home filesystem can make Playwright's zip extraction
-look stuck after the download reaches 100%, so extraction happens in `/tmp`.
+In Google Cloud Shell, Playwright's bundled zip extractor hangs inside the
+gVisor sandbox (the download reaches 100%, then extraction stalls on the first
+large file). To work around this, persona-review downloads the browser archive
+itself and extracts it with the system `unzip` into
+`$HOME/.cache/persona-review-ms-playwright`, the only filesystem that persists
+across Cloud Shell restarts. This needs the `unzip` package (preinstalled in
+Cloud Shell; if missing, run `sudo apt-get install -y unzip`).
 
 On Windows, if you previously saw an error about
 `chromium_headless_shell-...` after installing browsers, update
