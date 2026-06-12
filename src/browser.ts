@@ -1,4 +1,5 @@
-import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
+import type { Browser, BrowserContext, Page } from "playwright";
+import { configurePlaywrightEnvironment } from "./playwright-env.js";
 
 export interface FailedRequest {
   url: string;
@@ -100,7 +101,7 @@ export class BrowserSession {
 
   async open(url: string): Promise<{ loadMs: number }> {
     const start = Date.now();
-    this.browser = await chromium.launch({ channel: "chromium" });
+    this.browser = await launchChromium();
     this.context = await this.browser.newContext({
       viewport: this.profile.viewport,
       deviceScaleFactor: this.profile.deviceScaleFactor,
@@ -368,6 +369,17 @@ export class BrowserSession {
       // Leave the browser in its current state; the tool result reports the block.
     }
   }
+}
+
+async function launchChromium(): Promise<Browser> {
+  configurePlaywrightEnvironment();
+  const { chromium } = await import("playwright");
+
+  if (process.platform === "win32") {
+    return chromium.launch({ channel: "chromium" });
+  }
+
+  return chromium.launch();
 }
 
 function documentUrl(url: string): string | null {

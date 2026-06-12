@@ -147,17 +147,23 @@ To install the browser dependency, run this once:
 npx persona-review --install-browsers
 ```
 
-This downloads the Chromium artifact needed by the Playwright version bundled
+This downloads the Chromium browser artifact needed by the Playwright version bundled
 with `persona-review`. On Linux, it also installs the system packages Chromium
 needs. Do not use plain
 `npx playwright install chromium` for this npm/npx install method; it can
 install Chromium for a different Playwright package.
 
+In Google Cloud Shell, persona-review extracts Playwright's browser in
+`/tmp/persona-review-ms-playwright`, then copies the completed browser cache to
+`$HOME/.cache/persona-review-ms-playwright` so it persists across Cloud Shell
+restarts. Cloud Shell's home filesystem can make Playwright's zip extraction
+look stuck after the download reaches 100%, so extraction happens in `/tmp`.
+
 On Windows, if you previously saw an error about
 `chromium_headless_shell-...` after installing browsers, update
 `persona-review` and run `npx persona-review --install-browsers` again. Current
-versions launch the regular `chromium-...` browser artifact installed by that
-command.
+versions use the regular `chromium-...` browser artifact on Windows, and the
+headless-shell artifact on macOS and Linux.
 
 To use you need an API key from Anthropic, Open AI or Google:
 

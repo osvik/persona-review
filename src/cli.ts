@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
+import { cp, mkdir, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import readline from "node:readline/promises";
 import { stdin, stdout } from "node:process";
@@ -42,6 +43,13 @@ import {
 } from "./submit-data.js";
 import { lookupApiKey, USER_KEYS_PATH } from "./keys.js";
 import type { Provider } from "./llm/types.js";
+import {
+  cloudShellPersistentBrowserPath,
+  cloudShellTmpBrowserPath,
+  configurePlaywrightCloudShellInstallEnvironment,
+  configurePlaywrightEnvironment,
+  shouldUseManagedCloudShellBrowserPath,
+} from "./playwright-env.js";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -66,10 +74,13 @@ interface ParsedArgs {
 }
 
 interface PlaywrightRegistryModule {
+  installBrowsersForNpmInstall(browsers: string[]): Promise<unknown>;
   registry: {
-    findExecutable(name: string): unknown | undefined;
+    resolveBrowsers(
+      aliases: string[],
+      options: { shell?: "no" | "only" | undefined }
+    ): unknown[];
     installDeps(executables: unknown[], dryRun: boolean): Promise<unknown>;
-    install(executables: unknown[]): Promise<unknown>;
   };
 }
 
@@ -266,6 +277,7 @@ function printVersion() {
 }
 
 function playwrightRegistry(): PlaywrightRegistryModule {
+  configurePlaywrightEnvironment();
   const packageJsonPath = require.resolve("playwright/package.json");
   const playwrightRequire = createRequire(packageJsonPath);
   return playwrightRequire(
@@ -274,32 +286,63 @@ function playwrightRegistry(): PlaywrightRegistryModule {
 }
 
 async function installBrowsers(): Promise<void> {
-  const playwright = playwrightRegistry();
-  const executables = [requiredPlaywrightExecutable(playwright, "chromium")];
-  if (process.platform === "win32") {
-    executables.push(requiredPlaywrightExecutable(playwright, "winldd"));
+  if (
+    shouldUseManagedCloudShellBrowserPath() &&
+    !process.env.PLAYWRIGHT_BROWSERS_PATH
+  ) {
+    await installCloudShellBrowsers();
+    return;
   }
+
+  const playwright = playwrightRegistry();
 
   if (process.platform === "linux") {
     console.error("Installing Linux host dependencies for Chromium...");
+    const executables = playwright.registry.resolveBrowsers(["chromium"], {
+      shell: "only",
+    });
     await playwright.registry.installDeps(executables, false);
   }
 
   console.error(
     "Installing Chromium for the Playwright version bundled with persona-review..."
   );
-  await playwright.registry.install(executables);
+  if (process.platform === "win32") {
+    await playwright.installBrowsersForNpmInstall(["chromium"]);
+  } else {
+    await playwright.installBrowsersForNpmInstall(["chromium-headless-shell"]);
+  }
 }
 
-function requiredPlaywrightExecutable(
-  playwright: PlaywrightRegistryModule,
-  name: string
-): unknown {
-  const executable = playwright.registry.findExecutable(name);
-  if (!executable) {
-    throw new Error(`Cannot install ${name}`);
-  }
-  return executable;
+async function installCloudShellBrowsers(): Promise<void> {
+  configurePlaywrightCloudShellInstallEnvironment();
+  const playwright = playwrightRegistryWithoutEnvironmentChanges();
+
+  console.error("Installing Linux host dependencies for Chromium...");
+  const executables = playwright.registry.resolveBrowsers(["chromium"], {
+    shell: "only",
+  });
+  await playwright.registry.installDeps(executables, false);
+
+  console.error(
+    "Installing Chromium for the Playwright version bundled with persona-review..."
+  );
+  await playwright.installBrowsersForNpmInstall(["chromium-headless-shell"]);
+
+  const tmpPath = cloudShellTmpBrowserPath();
+  const persistentPath = cloudShellPersistentBrowserPath();
+  console.error(`Saving Chromium browser cache to ${persistentPath}...`);
+  await mkdir(path.dirname(persistentPath), { recursive: true });
+  await rm(persistentPath, { recursive: true, force: true });
+  await cp(tmpPath, persistentPath, { recursive: true });
+}
+
+function playwrightRegistryWithoutEnvironmentChanges(): PlaywrightRegistryModule {
+  const packageJsonPath = require.resolve("playwright/package.json");
+  const playwrightRequire = createRequire(packageJsonPath);
+  return playwrightRequire(
+    "playwright-core/lib/server/registry/index"
+  ) as PlaywrightRegistryModule;
 }
 
 function isMissingPlaywrightBrowserError(error: unknown): boolean {
