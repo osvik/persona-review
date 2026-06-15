@@ -313,7 +313,14 @@ async function installBrowsers(): Promise<void> {
     "Installing Chromium for the Playwright version bundled with persona-review..."
   );
   if (process.platform === "win32") {
-    await playwright.installBrowsersForNpmInstall(["chromium"]);
+    // Windows: Playwright's bundled zip extractor stalls partway through
+    // unpacking the full Chromium build (the download reaches 100%, then it
+    // hangs and never writes chrome.exe — closing the terminal leaves an
+    // incomplete install). Download the archive ourselves and extract it with
+    // a system tool instead, the same workaround used for Cloud Shell below.
+    // The headed `chromium` build is required because launch() uses
+    // `channel: "chromium"` on Windows (see browser.ts).
+    await installBrowserViaSelfExtraction(playwright, "chromium");
   } else {
     await playwright.installBrowsersForNpmInstall(["chromium-headless-shell"]);
   }
@@ -341,10 +348,10 @@ async function installCloudShellBrowsers(): Promise<void> {
   console.error(
     "Installing Chromium for the Playwright version bundled with persona-review..."
   );
-  await installBrowserViaSystemUnzip(playwright, "chromium-headless-shell");
+  await installBrowserViaSelfExtraction(playwright, "chromium-headless-shell");
 }
 
-async function installBrowserViaSystemUnzip(
+async function installBrowserViaSelfExtraction(
   playwright: PlaywrightRegistryModule,
   browserName: string
 ): Promise<void> {
@@ -372,8 +379,8 @@ async function installBrowserViaSystemUnzip(
     await downloadArchive(downloadURLs, zipPath);
     await rm(directory, { recursive: true, force: true });
     await mkdir(directory, { recursive: true });
-    console.error("Extracting Chromium with system unzip...");
-    await extractWithSystemUnzip(zipPath, directory);
+    console.error("Extracting Chromium...");
+    await extractArchive(zipPath, directory);
     const binary = executable.executablePath();
     if (binary) {
       await chmod(binary, 0o755);
@@ -415,26 +422,76 @@ async function downloadArchive(
   throw new Error(`Could not download Chromium from any mirror: ${message}`);
 }
 
+function extractArchive(zipPath: string, destination: string): Promise<void> {
+  if (process.platform === "win32") {
+    return extractWithWindowsTools(zipPath, destination);
+  }
+  return extractWithSystemUnzip(zipPath, destination);
+}
+
 function extractWithSystemUnzip(
   zipPath: string,
   destination: string
 ): Promise<void> {
+  return runProcess(
+    "unzip",
+    ["-q", "-o", zipPath, "-d", destination],
+    "Could not run 'unzip' (install it with 'sudo apt-get install -y unzip')"
+  );
+}
+
+// Windows ships bsdtar as `tar.exe` since Windows 10 1803, and it unpacks zip
+// archives via libarchive — much faster and more reliable than Playwright's
+// bundled JS extractor (and than PowerShell's Expand-Archive). Fall back to
+// Expand-Archive on the rare host without `tar` on PATH.
+async function extractWithWindowsTools(
+  zipPath: string,
+  destination: string
+): Promise<void> {
+  try {
+    await runProcess(
+      "tar",
+      ["-xf", zipPath, "-C", destination],
+      "Could not run 'tar'"
+    );
+    return;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(
+      `  tar extraction failed (${message}); falling back to PowerShell Expand-Archive...`
+    );
+  }
+  await runProcess(
+    "powershell",
+    [
+      "-NoProfile",
+      "-NonInteractive",
+      "-Command",
+      `Expand-Archive -LiteralPath ${powerShellQuote(zipPath)} -DestinationPath ${powerShellQuote(destination)} -Force`,
+    ],
+    "Could not run PowerShell Expand-Archive"
+  );
+}
+
+function powerShellQuote(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+function runProcess(
+  command: string,
+  args: string[],
+  spawnErrorHint: string
+): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn("unzip", ["-q", "-o", zipPath, "-d", destination], {
-      stdio: "inherit",
-    });
+    const child = spawn(command, args, { stdio: "inherit" });
     child.on("error", (error) => {
-      reject(
-        new Error(
-          `Could not run 'unzip' (install it with 'sudo apt-get install -y unzip'): ${error.message}`
-        )
-      );
+      reject(new Error(`${spawnErrorHint}: ${error.message}`));
     });
     child.on("exit", (code) => {
       if (code === 0) {
         resolve();
       } else {
-        reject(new Error(`unzip exited with code ${code ?? "unknown"}`));
+        reject(new Error(`${command} exited with code ${code ?? "unknown"}`));
       }
     });
   });
